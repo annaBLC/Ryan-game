@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MOTION BOXER — WIREFRAME</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ height:100%; background:#000; overflow:hidden; font-family:'Space Mono', monospace; touch-action:none; }
+  #app{ position:relative; width:100%; height:100vh; height:100dvh; display:flex; align-items:center; justify-content:center; background:#000; }
+
+  #video{ position:absolute; width:2px; height:2px; opacity:0; pointer-events:none; }
+
+  #cam-preview{
+    position:absolute; z-index:12; bottom:10px; right:10px;
+    width:72px; height:54px; border:2px solid #222; background:#000;
+    image-rendering: pixelated; overflow:hidden; opacity:0.8;
+  }
+  #cam-preview video{ position:static; width:100%; height:100%; opacity:1; object-fit:cover; transform:scaleX(-1); }
+  #cam-preview .lbl{ position:absolute; top:-14px; left:0; font-family:'Press Start 2P'; font-size:7px; color:#7fff5a; }
+
+  #screen-canvas{
+    image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;
+    background:#000; max-width:100%; max-height:100%;
+  }
+
+  #start-screen{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; padding:20px; background:#0c0f1a; text-align:center; z-index:20; overflow-y:auto;
+  }
+  .tag{ font-family:'Press Start 2P'; font-size:8px; color:#7fff5a; letter-spacing:0.15em; }
+  #start-screen h1{ font-family:'Press Start 2P'; font-size:clamp(20px,7vw,36px); line-height:1.5; color:#fff; text-shadow:3px 3px 0 #ff3b6b; }
+  .sub{ max-width:420px; color:#8f9bb3; font-size:11px; line-height:1.6; }
+  .how-to{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; max-width:460px; }
+  .how-to div{ border:2px solid #2a3348; background:#141a29; padding:8px 10px; font-size:9px; color:#8f9bb3; width:120px; }
+  .how-to b{ display:block; color:#7fd8ff; font-family:'Press Start 2P'; font-size:12px; margin-bottom:5px; }
+  #enable-btn{
+    margin-top:4px; background:#7fff5a; color:#0c0f1a; border:none; font-family:'Press Start 2P'; font-size:13px;
+    padding:14px 24px; cursor:pointer; box-shadow:4px 4px 0 #143314;
+  }
+  #enable-btn:active{ transform:translate(2px,2px); box-shadow:2px 2px 0 #143314; }
+  #cam-status{ font-size:10px; color:#ff3b6b; min-height:14px; }
+
+  #skip-calib-btn{
+    position:absolute; z-index:15; bottom:14px; left:50%; transform:translateX(-50%);
+    background:transparent; color:#8f9bb3; border:2px solid #3a4560; font-family:'Press Start 2P'; font-size:8px;
+    padding:9px 14px; cursor:pointer; display:none;
+  }
+  #skip-calib-btn:hover{ color:#fff; border-color:#7fff5a; }
+
+  #end-screen{
+    position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; background:rgba(6,8,12,0.95); z-index:30; text-align:center;
+  }
+  #end-title{ font-family:'Press Start 2P'; font-size:clamp(24px,8vw,44px); color:#7fff5a; text-shadow:4px 4px 0 #ff3b6b; }
+  #end-title.lose{ color:#ff3b6b; text-shadow:4px 4px 0 #7f2030; }
+  .end-stats{ color:#8f9bb3; font-size:11px; }
+  .end-stats b{ color:#fff; }
+  #restart-btn{
+    background:transparent; color:#7fff5a; border:2px solid #7fff5a; font-family:'Press Start 2P'; font-size:12px;
+    padding:12px 24px; cursor:pointer;
+  }
+  #restart-btn:hover{ background:#7fff5a; color:#0c0f1a; }
+</style>
+</head>
+<body>
+<div id="app">
+  <video id="video" autoplay playsinline muted></video>
+
+  <div id="start-screen">
+    <div class="tag">// OVER-THE-SHOULDER MOTION BOXING // HARD MODE //</div>
+    <h1>MOTION<br>BOXER</h1>
+    <p class="sub">Your head is the circle. Your hands roam the whole screen. Keep a hand near your own head, steady and unstretched, to parry — get parried and that hand is stunned for 2 seconds.</p>
+    <div class="how-to">
+      <div><b>01</b>Allow camera — head and hands need to be visible</div>
+      <div><b>02</b>Sway left/right to move your head to a corner — dodge. You can't hold a corner longer than 3 seconds</div>
+      <div><b>03</b>Throw a hand UPWARD to punch — raise it high for more reach toward the rival</div>
+      <div><b>04</b>A steady hand touching your own head parries — but only in your own half. A stretched-out or moving hand won't parry</div>
+      <div><b>05</b>Punching a parry costs YOU 1 damage and stuns that hand for 2 seconds. Dodging opens the puncher up for 1 second — free hit! If both punches collide mid-air, both hands get penalized</div>
+      <div><b>06</b>5 hits in a row stuns you for 3s (can't cover). 9 in a row is a knockdown — pump either hand up 3 times fast to get up (each earlier knockdown makes it harder)</div>
+      <div><b>07</b>3 rounds, 60 seconds each. Damage meter starts at 100 — 3 knockdowns in one round ends the fight. Survive a round and both fighters heal +20 HP</div>
+      <div><b>08</b>Keep both hands visible to the camera, above your head, and roughly in front of your shoulders — a lost, low, or flared-out hand goes dead (and stays dead for 2s after the camera finds it again)</div>
+      <div><b>09</b>Go the distance without a KO and it's decided on points — damage landed, plus bonus points for every knockdown scored</div>
+    </div>
+    <button id="enable-btn">INSERT COIN</button>
+    <div id="cam-status"></div>
+  </div>
+
+  <canvas id="screen-canvas"></canvas>
+  <button id="skip-calib-btn">SKIP SCAN</button>
+
+  <div id="cam-preview"><div class="lbl">CAM</div><video id="video2" autoplay playsinline muted></video></div>
+
+  <div id="end-screen">
+    <div id="end-title">KO!</div>
+    <div class="end-stats">DAMAGE DEALT <b id="final-score">0</b></div>
+    <div class="end-stats">POINTS <b id="final-points">0 - 0</b></div>
+    <button id="restart-btn">FIGHT AGAIN</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+
+<script>
+/* ============================ SETUP ============================ */
+const startScreen = document.getElementById('start-screen');
+const endScreen = document.getElementById('end-screen');
+const enableBtn = document.getElementById('enable-btn');
+const restartBtn = document.getElementById('restart-btn');
+const skipCalibBtn = document.getElementById('skip-calib-btn');
+const camStatus = document.getElementById('cam-status');
+const video = document.getElementById('video');
+const video2 = document.getElementById('video2');
+const finalScore = document.getElementById('final-score');
+const finalPoints = document.getElementById('final-points');
+const endTitle = document.getElementById('end-title');
+
+const screenCanvas = document.getElementById('screen-canvas');
+const sctx = screenCanvas.getContext('2d');
+
+// Portrait, phone-proportioned internal resolution — this is the "monitor scale" the whole
+// game is designed against, then letterbox-scaled to fit whatever device it's running on.
+const BW = 360, BH = 640;
+const back = document.createElement('canvas');
+back.width = BW; back.height = BH;
+const bctx = back.getContext('2d');
+bctx.imageSmoothingEnabled = false;
+sctx.imageSmoothingEnabled = false;
+
+function fitScreenCanvas(){
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const scale = Math.min(vw/BW, vh/BH);
+  screenCanvas.width = BW; screenCanvas.height = BH;
+  screenCanvas.style.width = Math.floor(BW*scale) + 'px';
+  screenCanvas.style.height = Math.floor(BH*scale) + 'px';
+}
+window.addEventListener('resize', fitScreenCanvas);
+fitScreenCanvas();
+
+const px = Math.round;
+function clampR(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+/* ============================ PALETTE ============================ */
+const PAL = {
+  bg:'#0a0d16',
+  skyTop:'#1b1030', skyMid:'#2a1a44', skyBot:'#3a2050',
+  floor:'#3d2a1f', floorLine:'#2a1b14',
+  crowd:['#241833','#2c1e3c','#33253f','#1c1430','#2f2038'],
+  rope:['#c93b3b','#e8e2d0','#2b6fd6'],
+  player:'#2b6fd6', playerGlow:'#7fd8ff',
+  rival:'#d63b3b', rivalGlow:'#ffcf6b',
+  playerSkin:{ body:'#2b6fd6', bodyLight:'#5b96ea', bodyDark:'#17356e', skin:'#e0a978', glove:'#274fc7', trim:'#7fd8ff', hair:'#241608' },
+  rivalSkin:{ body:'#d63b3b', bodyLight:'#f06b5f', bodyDark:'#711414', skin:'#d69a72', skinLight:'#e9b78e', glove:'#8f1c1c', trim:'#ffcf6b', hair:'#2a1a10' },
+  hpFill:'#e6303b', hpBack:'#2a1416', hpBorder:'#f4d35e',
+  text:'#f2f2f2', accent:'#7fff5a', warn:'#ff3b6b'
+};
+
+/* ============================ RULES / CONSTANTS ============================ */
+const TOTAL_ROUNDS = 3;
+const ROUND_SECONDS = 60;
+const ROUND_HEAL_HP = 20; // both fighters recover this much HP going into the next round if nobody was KO'd
+const DAMAGE_STRAIGHT = 2;
+const DAMAGE_HOOK = 1;
+const DAMAGE_BLOCK_PUNISH = 1; // punching a guarding hand costs the attacker this much instead
+const PUNCH_FLIGHT_MS = 300;
+const DODGE_PENALTY_MS = 1000; // successful dodge disables the puncher (attack+defense) for 1s
+const RESUME_DELAY_MS = 2400;  // pause after a fighter beats the count, while the referee waves them back in
+
+/* ---- Scoring (for a decision if the match goes the full 3 rounds without a stoppage) ---- */
+const KNOCKDOWN_BONUS_POINTS = 10; // extra points awarded to the OTHER fighter for scoring a knockdown
+
+/* ---- Knockdown recovery: raise either hand this many times to get back up. Each prior ---- */
+/* ---- knockdown suffered this match raises the bar — you get more fatigued as it piles up. ---- */
+const KD_BASE_RAISES = 3;
+const KD_RAISES_PER_PRIOR_KO = 2;
+const KD_MAX_RAISES = 9;
+
+/* ---- Rival difficulty: 1 (easiest) to 10 (hardest). Scales aggression, reaction speed, ---- */
+/* ---- telegraph length, and punch speed. Set to HARD MODE (10/10). ---- */
+const CPU_DIFFICULTY = 10;
+const DIFF_T = clampR(CPU_DIFFICULTY/10, 0, 1);
+const CPU_AGGRO_MULT = lerp(0.55, 1.25, DIFF_T);            // more/less likely to attack
+const CPU_SPEED_MULT = lerp(1.0, 0.55, DIFF_T);             // shorter telegraph/idle/guard windows = harder to read
+const CPU_PUNCH_FLIGHT_MS = Math.round(PUNCH_FLIGHT_MS * lerp(1.0, 0.75, DIFF_T)); // faster punches
+
+/* ---- Player hand-tracking rules ---- */
+const HAND_LOST_GRACE_MS = 2000;      // once the camera re-detects a lost hand, it stays disabled this long
+const HAND_BELOW_HEAD_MARGIN = 0.03;  // normalized-y slack before "wrist below head" disables the hand
+const HAND_SHOULDER_OUT_FRAC = 0.9;   // wrist beyond this fraction of shoulder-width from the shoulder = "beside the shoulder"
+
+/* ---- Punch-trigger calibration: filters out accidental/twitchy "senseless" punches ---- */
+const PUNCH_COOLDOWN_MS = 380;      // per-hand cooldown after a punch lands before it can throw again
+const PUNCH_GLOBAL_DELAY_MS = 150;  // minimum gap between ANY two of the player's punches (stops both-hands-at-once spam)
+const PUNCH_CONFIRM_FRAMES = 2;     // the upward-throw motion must read true this many consecutive frames before it fires
+
+const CENTER_X = BW*0.5;
+const CORNER_OFFSET = BW*0.28;
+const OPP_HEAD_Y = BH*0.30;      // rival stands closer to the middle of the frame
+const PLAYER_HEAD_Y = BH*0.57;   // pulled way up toward the rival — the player's silhouette now
+                                  // overlaps in front of the rival's lower body, so the two read
+                                  // as standing right on top of each other, super close together
+const HEAD_SIZE = 78; // player's head diameter (collision + visual)
+const OPP_SCALE = 1.72; // rival looms taller, bulkier, and more intimidating than the player
+const OPP_HEAD_SIZE = HEAD_SIZE*OPP_SCALE; // rival is bigger — both visually and in hitbox terms
+const HAND_RADIUS = 19;
+const OPP_HAND_RADIUS = HAND_RADIUS*OPP_SCALE;
+const GUARD_PROXIMITY = HEAD_SIZE*0.9;
+const CORNER_DWELL_MS = 3000; // can't stay swayed into a corner longer than this
+const FRONT_THRESHOLD = OPP_HEAD_SIZE*0.38; // player's punches target the rival, sized to the rival's (bigger) head
+const SIDE_MAX = OPP_HEAD_SIZE*1.35;
+const ZONE_Y_RANGE = HEAD_SIZE*1.0;
+const PARRY_LOCK_MS = 2000;             // a hand that gets parried can't attack again for this long
+const PARRY_STEADY_SPEED_MAX = 220;     // px/sec — hand must be roughly still to parry
+const PARRY_STRETCH_MAX = 0.8;          // fraction of max reach — beyond this counts as "full arm's length"
+const HAND_LIVE_SCALE = BW*0.85;
+// Hands now roam the FULL screen: real hand height maps from "raised above head" (near the
+// rival, up top) down to "resting low" (near the player's own head, at the bottom).
+const HAND_Y_RAISED = 0.08;
+const HAND_Y_LOW = 0.88;
+const HAND_TOP_REACH_Y = OPP_HEAD_Y - HEAD_SIZE*0.15;
+const HAND_BOTTOM_REST_Y = PLAYER_HEAD_Y + HEAD_SIZE*1.0;
+
+function zoneX(zone){ return zone==='left' ? CENTER_X-CORNER_OFFSET : zone==='right' ? CENTER_X+CORNER_OFFSET : CENTER_X; }
+
+/* ============================ POSE LANDMARK INDICES ============================ */
+const LM = { NOSE:0, LS:11, RS:12, LE:13, RE:14, LW:15, RW:16 };
+
+/* ============================ GAME STATE ============================ */
+let state, floatingTexts, timerInterval, latestPose=null, rafId, shakeUntil=0, shakeMag=0;
+let bloodParticles = [], impactBursts = [];
+let playerVignetteUntil = 0, playerVignetteIntensity = 0;
+let calib = null;
+let phase = 'boot';
+let resumeTokenCounter = 0; // invalidates a stale "resume the fight" timeout if the match moves on first
+let neutralLeanX = 0.5, smoothedLeanX = null;
+let playerScale = 1;
+
+function freshFighter(){
+  return {
+    hp:100, zone:'center', displayX:CENTER_X,
+    handL:{x:0,y:0}, handR:{x:0,y:0},
+    punchFlight:null, // {hand,type,startX,startY,t0,lockedZone,targetZone}
+    hitstunUntil:0, knockback:0,
+    cornerEnteredAt:null, cornerForced:false,
+    handLSpeed:0, handRSpeed:0, prevHandL:null, prevHandR:null, prevHandLT:0, prevHandRT:0,
+    handLLockUntil:0, handRLockUntil:0,
+    consecutiveHits:0, disabledUntil:0, coverDisabledUntil:0, headFrozenUntil:0,
+    punchDisabledUntil:0, counterWindowUntil:0,
+    faceDamage:0, hitFlashUntil:0, lastHeadPos:null,
+    // camera hand-tracking state (player only, but harmless on the cpu fighter too)
+    handLTracked:true, handRTracked:true,
+    handLReacquireGraceUntil:0, handRReacquireGraceUntil:0,
+    handLPosInvalid:false, handRPosInvalid:false
+  };
+}
+
+function resetState(){
+  state = {
+    round:1, timeLeft:ROUND_SECONDS, running:false, intro:true,
+    knockdown:null, playerKnockdowns:0, cpuKnockdowns:0, playerKnockdownsThisRound:0, cpuKnockdownsThisRound:0,
+    dealt:0, playerSway:0, playerPoints:0, cpuPoints:0,
+    player: freshFighter(),
+    cpu: freshFighter()
+  };
+  state.player.handL = { x: CENTER_X-40, y: PLAYER_HEAD_Y+10 };
+  state.player.handR = { x: CENTER_X+40, y: PLAYER_HEAD_Y+10 };
+  state.cpu.handL = { x: CENTER_X-40, y: OPP_HEAD_Y+10 };
+  state.cpu.handR = { x: CENTER_X+40, y: OPP_HEAD_Y+10 };
+  floatingTexts = [];
+  bloodParticles = [];
+  impactBursts = [];
+  playerVignetteUntil = 0;
+}
+
+/* ============================ PUNCH CLASSIFICATION ============================ */
+function damageFor(type){ return type==='HOOK' ? DAMAGE_HOOK : DAMAGE_STRAIGHT; }
+
+/* ============================ ZONE (sway) LOGIC WITH HYSTERESIS ============================ */
+function updateZone(sway, currentZone){
+  const ENTER = 0.40, EXIT = 0.18;
+  if(currentZone==='left') return sway > -EXIT ? 'center' : 'left';
+  if(currentZone==='right') return sway < EXIT ? 'center' : 'right';
+  if(sway > ENTER) return 'right';
+  if(sway < -ENTER) return 'left';
+  return 'center';
+}
+
+// Applies the "can't hold a corner more than 3s" rule to any fighter. Returns the zone to use
+// this frame, accounting for a forced return-to-center and a lockout until they relax back near center.
+function applyCornerDwellLimit(fighter, rawZone, swayMagnitude, now){
+  if(fighter.cornerForced){
+    if(swayMagnitude < 0.15) fighter.cornerForced = false;
+    return 'center';
+  }
+  if(rawZone !== fighter.zone){
+    if(rawZone==='left' || rawZone==='right') fighter.cornerEnteredAt = now;
+    fighter.zone = rawZone;
+  }
+  if(fighter.zone!=='center' && fighter.cornerEnteredAt && (now-fighter.cornerEnteredAt > CORNER_DWELL_MS)){
+    fighter.cornerForced = true;
+    return 'center';
+  }
+  return fighter.zone;
+}
+
+/* ---- Directional guard zones: FRONT (face) / LEFT side / RIGHT side, based on actual touch ---- */
+function handCoverZone(handPos, headPos, headRadius, handRadius){
+  const dx = handPos.x - headPos.x, dy = handPos.y - headPos.y;
+  const distToHead = Math.hypot(dx,dy);
+  if(distToHead > headRadius + handRadius + 6) return null; // must actually be touching
+  const angle = Math.atan2(dy,dx); // -PI..PI, -PI/2 = straight up
+  if(angle > -Math.PI*0.75 && angle < -Math.PI*0.25) return 'FRONT';
+  if(angle >= -Math.PI*0.25 && angle <= Math.PI*0.25) return 'RIGHT';
+  if(Math.abs(angle) >= Math.PI*0.75) return 'LEFT';
+  return null; // bottom quadrant isn't a defendable zone
+}
+
+// Camera-tracking gate for the player's hands: a hand is unusable (can't punch or guard)
+// while the camera can't see it, for 2s after it's re-detected (re-acquire grace), or
+// whenever it's sitting below the player's own head or out past the side of the shoulder.
+function handUsable(fighter, handKey){
+  if(fighter !== state.player) return true; // rule only applies to real camera tracking
+  const now = performance.now();
+  const side = handKey==='handL' ? 'L' : 'R';
+  const trackedKey = side==='L' ? 'handLTracked' : 'handRTracked';
+  const graceKey = side==='L' ? 'handLReacquireGraceUntil' : 'handRReacquireGraceUntil';
+  const invalidKey = side==='L' ? 'handLPosInvalid' : 'handRPosInvalid';
+  if(!fighter[trackedKey]) return false;                         // camera can't currently see this hand
+  if(now < (fighter[graceKey]||0)) return false;                 // just reacquired — 2s grace before it's live again
+  if(fighter[invalidKey]) return false;                          // wrist below head, or out beside the shoulder
+  return true;
+}
+
+// A hand can only "parry" (count as a genuine guard) if it's steady, not overextended,
+// not itself mid-punch, and hasn't strayed past the centerline into the opponent's half.
+function canParry(fighter, handKey){
+  const hand = fighter[handKey];
+  const now = performance.now();
+  if(!handUsable(fighter, handKey)) return false;          // camera can't see it / just regained it / bad position
+  if(now < (fighter.disabledUntil||0)) return false;      // punished after a whiffed/dodged punch
+  if(now < (fighter.coverDisabledUntil||0)) return false; // stunned from a 5-hit streak
+  const isPlayerFighter = fighter===state.player;
+  const ownHeadY = isPlayerFighter ? PLAYER_HEAD_Y : OPP_HEAD_Y;
+  const ownHalfOk = isPlayerFighter ? (hand.y >= BH*0.5) : (hand.y <= BH*0.5);
+  if(!ownHalfOk) return false;
+
+  const stretchDist = Math.abs(hand.y - ownHeadY);
+  const maxReach = Math.abs(HAND_BOTTOM_REST_Y - HAND_TOP_REACH_Y) || 1;
+  if(stretchDist/maxReach > PARRY_STRETCH_MAX) return false;
+
+  const speed = handKey==='handL' ? (fighter.handLSpeed||0) : (fighter.handRSpeed||0);
+  if(speed > PARRY_STEADY_SPEED_MAX) return false;
+
+  if(fighter.punchFlight && fighter.punchFlight.hand === (handKey==='handL'?'L':'R')) return false;
+
+  return true;
+}
+
+function guardedZones(fighter, headPos){
+  const z = new Set();
+  const isPlayerFighter = fighter===state.player;
+  const hr = (isPlayerFighter ? HEAD_SIZE*playerScale : OPP_HEAD_SIZE)/2;
+  const hndR = isPlayerFighter ? HAND_RADIUS*playerScale : OPP_HAND_RADIUS;
+  if(canParry(fighter,'handL')){ const z1=handCoverZone(fighter.handL, headPos, hr, hndR); if(z1) z.add(z1); }
+  if(canParry(fighter,'handR')){ const z2=handCoverZone(fighter.handR, headPos, hr, hndR); if(z2) z.add(z2); }
+  return z;
+}
+// CPU's punches still use a simple type→zone rule (it has no real position to read from).
+function classifyTargetZone(type, attackerHand){
+  if(type==='STRAIGHT') return 'FRONT';
+  return attackerHand==='L' ? 'RIGHT' : 'LEFT';
+}
+// The player's target zone comes directly from where their thrown hand actually is on
+// screen relative to the opponent's head — reach with a hand positioned to a side, and
+// that's the side you hit.
+function classifyTargetZoneByPosition(handX, opponentHeadX){
+  const dx = handX - opponentHeadX;
+  if(Math.abs(dx) <= FRONT_THRESHOLD*1.3) return 'FRONT';
+  return dx < 0 ? 'LEFT' : 'RIGHT';
+}
+
+/* ============================ RENDER: BACKGROUND ============================ */
+let nextFlashAt = 0, flashEvents = [];
+function drawBackground(now){
+  const g = bctx.createLinearGradient(0,0,0,BH*0.5);
+  g.addColorStop(0, PAL.skyTop); g.addColorStop(0.55, PAL.skyMid); g.addColorStop(1, PAL.skyBot);
+  bctx.fillStyle = g; bctx.fillRect(0,0,BW,BH*0.5);
+
+  for(let row=0; row<4; row++){
+    const y = px(10 + row*11);
+    for(let i=0;i<26;i++){
+      const w = 14, x = i*w + (row%2===0?0:6);
+      bctx.fillStyle = PAL.crowd[(i+row)%PAL.crowd.length];
+      bctx.fillRect(x, y, w-2, 10);
+    }
+  }
+
+  for(let i=0;i<3;i++){
+    const cx = 60 + i*130;
+    bctx.strokeStyle = 'rgba(80,70,60,0.6)'; bctx.lineWidth=1;
+    bctx.beginPath(); bctx.moveTo(cx,0); bctx.lineTo(cx,8); bctx.stroke();
+    const grd = bctx.createRadialGradient(cx,10,2,cx,10,44);
+    grd.addColorStop(0,'rgba(255,235,170,0.5)'); grd.addColorStop(1,'rgba(255,235,170,0)');
+    bctx.fillStyle = grd; bctx.fillRect(cx-44,2,88,60);
+  }
+
+  if(now > nextFlashAt){
+    flashEvents.push({ x:20+Math.random()*(BW-40), y:8+Math.random()*30, t:now, life:150 });
+    nextFlashAt = now + 1000 + Math.random()*2200;
+  }
+  flashEvents = flashEvents.filter(f=> now-f.t < f.life);
+  flashEvents.forEach(f=>{
+    const p=(now-f.t)/f.life;
+    bctx.fillStyle = `rgba(255,255,255,${Math.max(0,0.85-p*0.9)})`;
+    bctx.beginPath(); bctx.arc(f.x, f.y, 2+p*3, 0, Math.PI*2); bctx.fill();
+  });
+
+  const floorTop = BH*0.46; // pulled up toward the middle — a bigger, closer-looking ring
+  bctx.fillStyle = PAL.floor; bctx.fillRect(0, floorTop, BW, BH-floorTop);
+  bctx.strokeStyle = PAL.floorLine; bctx.lineWidth = 1;
+  for(let i=0;i<8;i++){
+    const y = px(floorTop + i*((BH-floorTop)/8));
+    bctx.beginPath(); bctx.moveTo(0,y); bctx.lineTo(BW,y); bctx.stroke();
+  }
+
+  bctx.save();
+  bctx.globalAlpha = 0.10; bctx.fillStyle = '#fff'; bctx.textAlign = 'center';
+  bctx.font = "10px 'Press Start 2P'";
+  bctx.fillText('MOTION BOXER', BW/2, BH*0.92);
+  bctx.restore();
+
+  // corner guide marks (subtle, kept for readability of the 3 head positions)
+  [CENTER_X-CORNER_OFFSET, CENTER_X, CENTER_X+CORNER_OFFSET].forEach(cx=>{
+    bctx.strokeStyle='rgba(255,255,255,0.05)';
+    bctx.beginPath(); bctx.moveTo(cx,0); bctx.lineTo(cx,BH); bctx.stroke();
+  });
+
+  // Ring ropes + posts are drawn here, as the LAST piece of the background, so that both
+  // fighters (drawn right after drawBackground returns) always render on top of the rope
+  // line — the ropes must stay behind the rival, never in front of him.
+  drawRingFrame(floorTop);
+
+  const vg = bctx.createRadialGradient(BW/2,BH*0.4,BH*0.25,BW/2,BH*0.4,BH*0.75);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.30)');
+  bctx.fillStyle = vg; bctx.fillRect(0,0,BW,BH);
+}
+
+// Draws the ring's horizontal ropes, corner posts, and side ropes as a clean, straight-edged
+// rectangle — like the real ropes of a boxing ring seen face-on — instead of curved lines,
+// so the sides can never bow or drift into the middle of the play area. Each of the 3 ropes
+// runs from its back (top, behind the rival) endpoint straight down to the matching front
+// (bottom, nearest the player) endpoint, closing the frame at all four corners. Called from
+// drawBackground BEFORE either fighter is drawn, so the fighters always composite on top of
+// this — the ropeline sits behind the rival (and the player) at all times.
+function drawRingFrame(floorTop){
+  const ropeInset = (i)=> 16 + i*7; // left/right inset per rope — same value used on every edge so corners line up exactly
+  const backY = BH*0.10; // the "back" rope, behind the rival, furthest from camera
+  const backYs = [backY-6, backY+5, backY+16];
+  const frontYs = [floorTop-14, floorTop+10, floorTop+36];
+
+  // back ropes (top of the frame, behind the rival) — straight horizontal lines
+  backYs.forEach((ry,i)=>{
+    const insetL = ropeInset(i), insetR = BW-ropeInset(i);
+    bctx.strokeStyle = PAL.rope[i%PAL.rope.length]; bctx.lineWidth = 6;
+    bctx.beginPath(); bctx.moveTo(insetL, ry); bctx.lineTo(insetR, ry); bctx.stroke();
+  });
+
+  // front ropes (nearest the player) — straight horizontal lines, same insets as the back
+  // ropes so the side ropes connecting them form a true rectangle, not a curve.
+  frontYs.forEach((ry,i)=>{
+    const insetL = ropeInset(i), insetR = BW-ropeInset(i);
+    bctx.strokeStyle = PAL.rope[i%PAL.rope.length]; bctx.lineWidth = 7;
+    bctx.beginPath(); bctx.moveTo(insetL, ry); bctx.lineTo(insetR, ry); bctx.stroke();
+  });
+
+  // front corner posts (bigger, more prominent — closest to camera)
+  ['#241833', '#2e1d40'].forEach((col,ci)=>{
+    bctx.fillStyle = col;
+    bctx.fillRect(2-ci, floorTop-52, 18-ci*2, 104);
+    bctx.fillRect(BW-20+ci, floorTop-52, 18-ci*2, 104);
+  });
+  bctx.fillStyle = '#ffcf6b';
+  bctx.fillRect(2, floorTop-52, 18, 7);
+  bctx.fillRect(BW-20, floorTop-52, 18, 7);
+
+  // back corner posts (smaller — further away, behind the rival) so the ring reads as a
+  // full enclosed rectangle rather than just a near wall of ropes.
+  ['#241833', '#2e1d40'].forEach((col,ci)=>{
+    bctx.fillStyle = col;
+    bctx.fillRect(8-ci, backY-22, 10-ci, 54);
+    bctx.fillRect(BW-18+ci, backY-22, 10-ci, 54);
+  });
+  bctx.fillStyle = '#ffcf6b';
+  bctx.fillRect(8, backY-22, 10, 4);
+  bctx.fillRect(BW-18, backY-22, 10, 4);
+
+  // side ropes: straight lines running directly from each back-rope endpoint down to its
+  // matching front-rope endpoint at the SAME inset — the piece that closes the rectangle,
+  // with no bow or curve that could drift toward the middle of the ring.
+  PAL.rope.forEach((col,i)=>{
+    const insetL = ropeInset(i), insetR = BW-ropeInset(i);
+    bctx.strokeStyle = col; bctx.lineWidth = 5;
+    bctx.beginPath(); bctx.moveTo(insetL, backYs[i]); bctx.lineTo(insetL, frontYs[i]); bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(insetR, backYs[i]); bctx.lineTo(insetR, frontYs[i]); bctx.stroke();
+  });
+}
+
+/* ============================ RENDER: WIREFRAME FIGHTER ============================ */
+function shakeOffset(){
+  const now = performance.now();
+  if(now > shakeUntil) return {x:0,y:0};
+  const p = (shakeUntil-now)/150;
+  return { x:(Math.random()-0.5)*shakeMag*p, y:(Math.random()-0.5)*shakeMag*p };
+}
+function triggerShake(mag){ shakeUntil = performance.now()+150; shakeMag = mag; }
+
+const BRUISE_SPOTS = [ {dx:-0.34,dy:-0.04}, {dx:0.32,dy:-0.02}, {dx:-0.12,dy:-0.34}, {dx:0.16,dy:0.30}, {dx:-0.30,dy:0.26} ];
+
+function drawOpponentHead(x,y,size,now,fallT,isTelegraph,isHurt){
+  fallT = fallT||0;
+  const off = shakeOffset();
+  const s = size*(1-fallT*0.32);
+  const r = s/2;
+  const c = state.cpu;
+  const leanDirBase = clampR((x - (c._prevZoneX===undefined?x:c._prevZoneX)) * 0.4, -1, 1);
+  c._prevZoneX = x;
+  const cx = x+off.x + fallT*leanDirBase*r*0.9 + (fallT>0?fallT*fallT*10:0);
+  const cy = y+off.y + fallT*36;
+  const pal = PAL.rivalSkin;
+
+  // lean/step: legs and torso shift in the direction of travel toward the current zone
+  const leanDir = leanDirBase;
+  const walk = Math.sin(now/260) * Math.min(1, Math.abs((c.displayX||x) - zoneX(c.zone))/6 + 0.15);
+
+  bctx.save();
+  if(fallT>0) bctx.globalAlpha = 1-fallT*0.18;
+
+  // --- legs (full body, visibly shift with sway) — longer stance for a taller-looking rival ---
+  const hipY = cy + r*1.5;
+  const groundY = hipY + r*1.55;
+  const legW = Math.max(5, r*0.32);
+  const stanceX = r*0.58;
+  bctx.strokeStyle = pal.bodyDark; bctx.lineCap = 'round'; bctx.lineWidth = legW;
+  const backLegX = cx - stanceX + leanDir*r*0.35;
+  const frontLegX = cx + stanceX + leanDir*r*0.55;
+  bctx.beginPath();
+  bctx.moveTo(px(backLegX), px(hipY));
+  bctx.lineTo(px(backLegX - leanDir*r*0.2 + walk*4), px(groundY));
+  bctx.stroke();
+  bctx.beginPath();
+  bctx.moveTo(px(frontLegX), px(hipY));
+  bctx.lineTo(px(frontLegX + leanDir*r*0.2 - walk*4), px(groundY));
+  bctx.stroke();
+
+  // --- torso, bigger and shaded with visible muscle definition — bulked up for intimidation ---
+  const shW = r*3.05, torsoH = r*2.45;
+  const shY = cy+r*0.55;
+  const grad = bctx.createLinearGradient(px(cx-shW/2),0,px(cx+shW/2),0);
+  grad.addColorStop(0, pal.bodyDark); grad.addColorStop(0.5, pal.bodyLight); grad.addColorStop(1, pal.body);
+  bctx.fillStyle = grad;
+  bctx.beginPath();
+  bctx.moveTo(px(cx-shW/2+leanDir*r*0.15), px(shY));
+  bctx.quadraticCurveTo(px(cx), px(shY-r*0.32), px(cx+shW/2+leanDir*r*0.15), px(shY));
+  bctx.lineTo(px(cx+shW*0.36+leanDir*r*0.25), px(shY+torsoH));
+  bctx.lineTo(px(cx-shW*0.36+leanDir*r*0.25), px(shY+torsoH));
+  bctx.closePath(); bctx.fill();
+
+  // pec + ab shading for a muscular look
+  bctx.strokeStyle = 'rgba(0,0,0,0.22)'; bctx.lineWidth = Math.max(1, r*0.05);
+  bctx.beginPath(); bctx.moveTo(px(cx-shW*0.28),px(shY+r*0.35)); bctx.quadraticCurveTo(px(cx),px(shY+r*0.18),px(cx+shW*0.28),px(shY+r*0.35)); bctx.stroke();
+  for(let i=0;i<3;i++){
+    const yy = shY+r*0.75+i*r*0.34;
+    bctx.beginPath(); bctx.moveTo(px(cx-shW*0.10),px(yy)); bctx.lineTo(px(cx-shW*0.02),px(yy)); bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(px(cx+shW*0.02),px(yy)); bctx.lineTo(px(cx+shW*0.10),px(yy)); bctx.stroke();
+  }
+  bctx.strokeStyle = pal.trim; bctx.lineWidth = 2;
+  bctx.beginPath(); bctx.moveTo(px(cx-shW*0.34),px(shY+torsoH-3)); bctx.lineTo(px(cx+shW*0.34),px(shY+torsoH-3)); bctx.stroke();
+
+  // --- head ---
+  bctx.shadowColor = PAL.rivalGlow; bctx.shadowBlur = isTelegraph ? 14+6*Math.sin(now/50) : 5;
+  const headGrad = bctx.createRadialGradient(px(cx-r*0.3),px(cy-r*0.35),r*0.15,px(cx),px(cy),r);
+  headGrad.addColorStop(0, pal.skinLight); headGrad.addColorStop(1, pal.skin);
+  bctx.fillStyle = headGrad;
+  bctx.beginPath(); bctx.arc(px(cx),px(cy),px(r),0,Math.PI*2); bctx.fill();
+  bctx.shadowBlur = 0;
+  bctx.strokeStyle = pal.trim; bctx.lineWidth = 2;
+  bctx.beginPath(); bctx.arc(px(cx),px(cy),px(r),0,Math.PI*2); bctx.stroke();
+
+  bctx.fillStyle = pal.hair;
+  bctx.beginPath(); bctx.arc(px(cx),px(cy-r*0.35),px(r*0.95),Math.PI*1.05,Math.PI*1.95); bctx.fill();
+
+  const browTilt = isTelegraph ? r*0.14 : 0;
+  bctx.strokeStyle = pal.bodyDark; bctx.lineWidth = 1;
+  bctx.beginPath(); bctx.moveTo(px(cx-r*0.5),px(cy-r*0.16)); bctx.lineTo(px(cx-r*0.15),px(cy-r*0.16-browTilt)); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(px(cx+r*0.15),px(cy-r*0.16-browTilt)); bctx.lineTo(px(cx+r*0.5),px(cy-r*0.16)); bctx.stroke();
+
+  const isSmug = performance.now() < (c.smirkUntil||0);
+  if(isHurt){
+    bctx.strokeStyle='#1a1a1a'; bctx.lineWidth=1;
+    bctx.beginPath(); bctx.moveTo(px(cx-r*0.5),px(cy-2)); bctx.lineTo(px(cx-r*0.2),px(cy+2)); bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(px(cx+r*0.2),px(cy-2)); bctx.lineTo(px(cx+r*0.5),px(cy+2)); bctx.stroke();
+    bctx.fillStyle='#3a1010';
+    bctx.fillRect(px(cx-r*0.22),px(cy+r*0.36),px(r*0.44),px(r*0.3));
+  } else {
+    const es = Math.max(1, r*0.16);
+    bctx.fillStyle = '#1a1a1a';
+    bctx.fillRect(px(cx-r*0.42-es/2), px(cy-es/2), px(es), px(es));
+    bctx.fillRect(px(cx+r*0.42-es/2), px(cy-es/2), px(es), px(es));
+    bctx.strokeStyle = '#3a1010'; bctx.lineWidth=1;
+    if(isSmug){
+      bctx.beginPath(); bctx.moveTo(px(cx-r*0.26),px(cy+r*0.40)); bctx.quadraticCurveTo(px(cx+r*0.05),px(cy+r*0.50),px(cx+r*0.30),px(cy+r*0.36)); bctx.stroke();
+    } else {
+      bctx.beginPath(); bctx.moveTo(px(cx-r*0.26),px(cy+r*0.42)); bctx.lineTo(px(cx+r*0.26),px(cy+r*0.42)); bctx.stroke();
+    }
+  }
+
+  // accumulated bruising from repeated hits
+  const dmgN = c.faceDamage||0;
+  for(let i=0;i<Math.min(dmgN, BRUISE_SPOTS.length); i++){
+    const sp = BRUISE_SPOTS[i];
+    bctx.fillStyle = `rgba(120,30,70,${0.30+0.08*i})`;
+    bctx.beginPath();
+    bctx.ellipse(px(cx+sp.dx*r*1.6), px(cy+sp.dy*r*1.6), px(r*0.36), px(r*0.25), 0, 0, Math.PI*2);
+    bctx.fill();
+  }
+  if(now < (c.hitFlashUntil||0)){
+    const fp = ((c.hitFlashUntil||0)-now)/220;
+    bctx.fillStyle = `rgba(220,20,30,${0.45*Math.min(1,fp)})`;
+    bctx.beginPath(); bctx.arc(px(cx),px(cy),px(r*1.1),0,Math.PI*2); bctx.fill();
+  }
+
+  bctx.restore();
+  return { x:cx, y:cy };
+}
+
+function drawPlayerHead(x,y,size,now,fallT){
+  fallT = fallT||0;
+  const off = shakeOffset();
+  const s = size*(1-fallT*0.3);
+  const r = s/2;
+  const cx = x+off.x, cy = y+off.y+fallT*40;
+  const pal = PAL.playerSkin;
+  const bob = fallT>0 ? 0 : Math.sin(now/480)*1.5;
+
+  bctx.save();
+  if(fallT>0) bctx.globalAlpha = 1-fallT*0.18;
+  const shW = r*2.3, torsoH = r*2.4;
+  const shY = cy+bob+r*0.6;
+  const grad = bctx.createLinearGradient(px(cx-shW/2),0,px(cx+shW/2),0);
+  grad.addColorStop(0, pal.bodyDark); grad.addColorStop(0.5, pal.bodyLight); grad.addColorStop(1, pal.body);
+  bctx.fillStyle = grad;
+  bctx.beginPath();
+  bctx.moveTo(px(cx-shW/2), px(shY));
+  bctx.quadraticCurveTo(px(cx-shW/2), px(shY-r*0.4), px(cx), px(shY-r*0.5));
+  bctx.quadraticCurveTo(px(cx+shW/2), px(shY-r*0.4), px(cx+shW/2), px(shY));
+  bctx.lineTo(px(cx+shW/2), px(shY+torsoH));
+  bctx.lineTo(px(cx-shW/2), px(shY+torsoH));
+  bctx.closePath(); bctx.fill();
+
+  bctx.fillStyle = pal.hair;
+  bctx.beginPath(); bctx.arc(px(cx),px(cy+bob),px(r),0,Math.PI*2); bctx.fill();
+  bctx.fillStyle = 'rgba(255,255,255,0.08)';
+  bctx.beginPath(); bctx.arc(px(cx-r*0.28),px(cy+bob-r*0.28),px(r*0.32),0,Math.PI*2); bctx.fill();
+  bctx.strokeStyle = pal.trim; bctx.lineWidth = 1.5;
+  bctx.beginPath(); bctx.arc(px(cx),px(cy+bob),px(r),0,Math.PI*2); bctx.stroke();
+
+  bctx.restore();
+  return { x:cx, y:cy+bob };
+}
+
+function drawHand(x,y,r,color,glow,guarding,locked){
+  bctx.save();
+  if(locked) bctx.globalAlpha = 0.35;
+  const c = locked ? '#888' : color;
+  bctx.shadowColor = locked ? 'transparent' : glow; bctx.shadowBlur = guarding?11:3;
+  bctx.fillStyle = c;
+  bctx.beginPath(); bctx.arc(px(x),px(y),px(r),0,Math.PI*2); bctx.fill();
+  bctx.beginPath(); bctx.arc(px(x-r*0.75),px(y+r*0.15),px(r*0.42),0,Math.PI*2); bctx.fill(); // thumb
+  bctx.shadowBlur = 0;
+  bctx.strokeStyle = locked ? '#555' : 'rgba(0,0,0,0.35)'; bctx.lineWidth = 1.5;
+  bctx.beginPath(); bctx.arc(px(x),px(y),px(r),0,Math.PI*2); bctx.stroke();
+  bctx.strokeStyle = '#fff'; bctx.lineWidth = 1; bctx.globalAlpha = (locked?0.35:1)*0.8;
+  bctx.beginPath();
+  bctx.moveTo(px(x-r*0.32),px(y)); bctx.lineTo(px(x+r*0.32),px(y));
+  bctx.moveTo(px(x),px(y-r*0.32)); bctx.lineTo(px(x),px(y+r*0.32));
+  bctx.stroke();
+  bctx.globalAlpha = 1;
+  bctx.restore();
+}
+
+function shoulderAnchor(headPos, size, side){
+  return { x: headPos.x + side*size*0.62, y: headPos.y + size*0.62 };
+}
+
+// Live elbow tracking for the player: projects the real shoulder→elbow→wrist geometry
+// (angle + bend) from the camera onto our screen-space shoulder→hand segment, so the
+// visible arm bends the way the player's real arm actually bends.
+function liveElbowScreenPos(lm, shoulderIdx, elbowIdx, wristIdx, shoulderScreen, handScreen){
+  if(!goodVis(lm,shoulderIdx,0.3) || !goodVis(lm,elbowIdx,0.3) || !goodVis(lm,wristIdx,0.3)) return null;
+  const sx=1-lm[shoulderIdx].x, sy=lm[shoulderIdx].y;
+  const ex=1-lm[elbowIdx].x, ey=lm[elbowIdx].y;
+  const wx=1-lm[wristIdx].x, wy=lm[wristIdx].y;
+  const totalX = wx-sx, totalY = wy-sy;
+  const totalLenSq = totalX*totalX+totalY*totalY || 0.0001;
+  const elbowX = ex-sx, elbowY = ey-sy;
+  const t = clampR((elbowX*totalX+elbowY*totalY)/totalLenSq, 0.15, 0.85);
+  const totalLen = Math.sqrt(totalLenSq) || 0.0001;
+  const perpX = -totalY/totalLen, perpY = totalX/totalLen;
+  const bendAmt = (elbowX-totalX*t)*perpX + (elbowY-totalY*t)*perpY;
+
+  const segDX = handScreen.x-shoulderScreen.x, segDY = handScreen.y-shoulderScreen.y;
+  const segLen = Math.hypot(segDX,segDY) || 1;
+  const perpScreenX = -segDY/segLen, perpScreenY = segDX/segLen;
+  const baseX = lerp(shoulderScreen.x, handScreen.x, t);
+  const baseY = lerp(shoulderScreen.y, handScreen.y, t);
+  const bendScreenAmt = bendAmt * HAND_LIVE_SCALE * 0.6;
+  return { x: baseX + perpScreenX*bendScreenAmt, y: baseY + perpScreenY*bendScreenAmt };
+}
+// CPU has no real body to track — simulate a natural elbow bend outward from the shoulder-hand line.
+function simulatedElbow(shoulderScreen, handScreen, outwardSign){
+  const midX=(shoulderScreen.x+handScreen.x)/2, midY=(shoulderScreen.y+handScreen.y)/2;
+  const dx=handScreen.x-shoulderScreen.x, dy=handScreen.y-shoulderScreen.y;
+  const len=Math.hypot(dx,dy)||1;
+  const bend = 16*outwardSign;
+  return { x: midX+(-dy/len)*bend, y: midY+(dx/len)*bend };
+}
+
+// Shared referee silhouette (legs, torso, head) used by both the post-match celebration
+// pose and the between-phases "resume the fight" gesture.
+function drawRefereeBody(cx, cy, h){
+  bctx.strokeStyle = '#161616'; bctx.lineWidth = 6; bctx.lineCap='round';
+  bctx.beginPath(); bctx.moveTo(px(cx-6), px(cy+h*0.55)); bctx.lineTo(px(cx-6), px(cy+h*0.95)); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(px(cx+6), px(cy+h*0.55)); bctx.lineTo(px(cx+6), px(cy+h*0.95)); bctx.stroke();
+  bctx.fillStyle = '#f2f2f2';
+  bctx.fillRect(px(cx-h*0.22), px(cy), px(h*0.44), px(h*0.55));
+  bctx.strokeStyle='#1a1a1a'; bctx.lineWidth=1;
+  for(let i=1;i<=2;i++){ const yy=cy+h*0.55*i/3; bctx.beginPath(); bctx.moveTo(px(cx-h*0.22),px(yy)); bctx.lineTo(px(cx+h*0.22),px(yy)); bctx.stroke(); }
+  bctx.fillStyle='#caa07a';
+  bctx.beginPath(); bctx.arc(px(cx), px(cy-h*0.12), px(h*0.16), 0, Math.PI*2); bctx.fill();
+}
+
+function drawReferee(now, winner){
+  const cx = BW/2, cy = BH*0.40;
+  const h = 64;
+  bctx.save();
+  drawRefereeBody(cx, cy, h);
+
+  const raiseP = clampR((now-(state.celebrateStartedAt||now))/500, 0, 1);
+  const armAngle = lerp(0.3, -1.3, raiseP) + Math.sin(now/150)*0.05;
+  const shx = cx+h*0.20, shy = cy+h*0.08;
+  const ex = shx+Math.cos(armAngle)*h*0.5, ey = shy+Math.sin(armAngle)*h*0.5;
+  bctx.strokeStyle = '#f2f2f2'; bctx.lineWidth=5; bctx.lineCap='round';
+  bctx.beginPath(); bctx.moveTo(px(shx),px(shy)); bctx.lineTo(px(ex),px(ey)); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(px(cx-h*0.20),px(cy+h*0.08)); bctx.lineTo(px(cx-h*0.28),px(cy+h*0.4)); bctx.stroke();
+
+  bctx.textAlign='center'; bctx.font="10px 'Press Start 2P'"; bctx.fillStyle=PAL.accent;
+  bctx.fillText(winner==='player' ? 'YOU WIN!' : (winner==='cpu' ? 'RIVAL WINS' : 'DRAW'), cx, cy-h*0.35);
+  bctx.restore();
+}
+
+// Referee steps in after a fighter beats the count: sweeps both arms out wide (separating/
+// checking the fighters), then chops them down and forward to signal the fight is back on,
+// with a "BOX!" call landing right as the gesture finishes and the round actually resumes.
+function drawRefereeResume(now){
+  const cx = BW/2, cy = BH*0.40;
+  const h = 64;
+  const t = clampR((now-(state.resumeStartedAt||now))/RESUME_DELAY_MS, 0, 1);
+  bctx.save();
+  drawRefereeBody(cx, cy, h);
+
+  const sweepOutT = clampR(t/0.5, 0, 1);       // 0 -> 0.5: arms rise and spread wide
+  const chopDownT = clampR((t-0.5)/0.4, 0, 1); // 0.5 -> 0.9: arms chop down/forward
+
+  const outAngle = lerp(0.3, -0.55, sweepOutT);
+  const angle = lerp(outAngle, 0.75, chopDownT);
+  const mirrorAngle = Math.PI - angle;
+
+  const shR = { x: cx+h*0.20, y: cy+h*0.08 };
+  const shL = { x: cx-h*0.20, y: cy+h*0.08 };
+  const eR = { x: shR.x+Math.cos(angle)*h*0.5, y: shR.y+Math.sin(angle)*h*0.5 };
+  const eL = { x: shL.x+Math.cos(mirrorAngle)*h*0.5, y: shL.y+Math.sin(mirrorAngle)*h*0.5 };
+
+  bctx.strokeStyle = '#f2f2f2'; bctx.lineWidth=5; bctx.lineCap='round';
+  bctx.beginPath(); bctx.moveTo(px(shR.x),px(shR.y)); bctx.lineTo(px(eR.x),px(eR.y)); bctx.stroke();
+  bctx.beginPath(); bctx.moveTo(px(shL.x),px(shL.y)); bctx.lineTo(px(eL.x),px(eL.y)); bctx.stroke();
+
+  if(t > 0.72){
+    const p = clampR((t-0.72)/0.28, 0, 1);
+    const pop = 1 + (1-p)*0.6;
+    bctx.textAlign='center'; bctx.fillStyle=PAL.accent;
+    bctx.font = Math.round(11*pop)+"px 'Press Start 2P'";
+    bctx.globalAlpha = p;
+    bctx.fillText('BOX!', cx, cy-h*0.35);
+    bctx.globalAlpha = 1;
+  }
+  bctx.restore();
+}
+
+function drawArmLine(shoulderPos, elbowPos, handPos, color){
+  bctx.save();
+  bctx.strokeStyle = color; bctx.globalAlpha = 0.6; bctx.lineWidth = 4.5; bctx.lineCap = 'round';
+  bctx.beginPath(); bctx.moveTo(px(shoulderPos.x),px(shoulderPos.y)); bctx.lineTo(px(elbowPos.x),px(elbowPos.y)); bctx.stroke();
+  bctx.lineWidth = 4;
+  bctx.beginPath(); bctx.moveTo(px(elbowPos.x),px(elbowPos.y)); bctx.lineTo(px(handPos.x),px(handPos.y)); bctx.stroke();
+  bctx.restore();
+}
+
+// Highlights whichever arc(s) of the head circle are currently guarded — FRONT (top),
+// LEFT side, or RIGHT side — so it's clear at a glance what's actually covered.
+function drawZoneHighlights(headPos, size, zones, glow){
+  if(zones.size===0) return;
+  const r = size/2;
+  bctx.save();
+  bctx.strokeStyle = glow; bctx.lineWidth = 5;
+  bctx.shadowColor = glow; bctx.shadowBlur = 8;
+  if(zones.has('FRONT')){
+    bctx.beginPath(); bctx.arc(px(headPos.x),px(headPos.y),px(r), -Math.PI*0.75, -Math.PI*0.25); bctx.stroke();
+  }
+  if(zones.has('LEFT')){
+    bctx.beginPath(); bctx.arc(px(headPos.x),px(headPos.y),px(r), Math.PI*0.75, Math.PI*1.25); bctx.stroke();
+  }
+  if(zones.has('RIGHT')){
+    bctx.beginPath(); bctx.arc(px(headPos.x),px(headPos.y),px(r), -Math.PI*0.25, Math.PI*0.25); bctx.stroke();
+  }
+  bctx.restore();
+}
+
+function isGuarding(fighter, headPos){
+  return guardedZones(fighter, headPos).size > 0;
+}
+
+function trackHandSpeeds(fighter, now){
+  if(fighter.prevHandL){
+    const dt = Math.max(1, now-(fighter.prevHandLT||now));
+    fighter.handLSpeed = Math.hypot(fighter.handL.x-fighter.prevHandL.x, fighter.handL.y-fighter.prevHandL.y)/(dt/1000);
+  }
+  fighter.prevHandL = { x:fighter.handL.x, y:fighter.handL.y }; fighter.prevHandLT = now;
+  if(fighter.prevHandR){
+    const dt = Math.max(1, now-(fighter.prevHandRT||now));
+    fighter.handRSpeed = Math.hypot(fighter.handR.x-fighter.prevHandR.x, fighter.handR.y-fighter.prevHandR.y)/(dt/1000);
+  }
+  fighter.prevHandR = { x:fighter.handR.x, y:fighter.handR.y }; fighter.prevHandRT = now;
+}
+
+/* ============================ AI ============================ */
+let cpuNextDecisionAt = 0, cpuMode = 'idle', cpuModeUntil = 0, cpuNextZoneChangeAt = 0, cpuGuardFocus = 'FRONT';
+
+function updateCPU(now){
+  const c = state.cpu;
+  if(now < c.hitstunUntil){ c.displayX = lerp(c.displayX, zoneX(c.zone), 0.12); return; }
+  c.knockback = Math.max(0, c.knockback-0.05);
+  c.displayX = lerp(c.displayX, zoneX(c.zone), 0.12);
+
+  // corner dwell limit applies to the rival too, unless its head is currently frozen (punished)
+  if(now >= c.headFrozenUntil){
+    if(c.zone!=='center' && c.cornerEnteredAt && (now-c.cornerEnteredAt > CORNER_DWELL_MS)){
+      c.zone = 'center'; c.cornerEnteredAt = null;
+    }
+    if(now >= cpuNextZoneChangeAt){
+      const desired = Math.random()<0.5 ? ['center','left','right'][Math.floor(Math.random()*3)] : 'center';
+      if(desired !== c.zone && (desired==='left'||desired==='right')) c.cornerEnteredAt = now;
+      c.zone = desired;
+      cpuNextZoneChangeAt = now + 1400 + Math.random()*1800;
+    }
+  }
+
+  if(now < (c.disabledUntil||0) || now < (c.punchDisabledUntil||0)){
+    cpuMode = 'idle'; cpuNextDecisionAt = now + 300;
+  } else if(now >= cpuNextDecisionAt && cpuMode!=='punch' && !c.punchFlight){
+    const baseAggro = c.hp<40 ? 0.6 : c.hp<70 ? 0.46 : 0.34;
+    const aggro = Math.min(0.88, baseAggro * CPU_AGGRO_MULT); // difficulty-scaled aggression
+    const roll = Math.random();
+    const availableHands = [];
+    if(now >= (c.handLLockUntil||0)) availableHands.push('L');
+    if(now >= (c.handRLockUntil||0)) availableHands.push('R');
+    if(roll < aggro && availableHands.length>0){
+      cpuMode='telegraph';
+      cpuModeUntil = now + (260 + Math.random()*160) * CPU_SPEED_MULT; // shorter at higher difficulty
+      c.pendingType = Math.random()<0.6 ? 'STRAIGHT' : 'HOOK';
+      c.pendingHand = availableHands[Math.floor(Math.random()*availableHands.length)];
+    } else if(roll < aggro+0.30){
+      cpuMode='guard'; cpuModeUntil = now + (900 + Math.random()*900) * CPU_SPEED_MULT;
+      const r = Math.random();
+      cpuGuardFocus = r<0.5 ? 'FRONT' : (r<0.75 ? 'LEFT' : 'RIGHT');
+    } else {
+      cpuMode='idle'; cpuModeUntil = now + (500 + Math.random()*700) * CPU_SPEED_MULT;
+    }
+    cpuNextDecisionAt = now + 999999;
+  }
+  if(cpuMode==='telegraph' && now>=cpuModeUntil){
+    launchPunch(c, c.pendingHand, state.player, classifyTargetZone(c.pendingType, c.pendingHand), c.pendingType);
+    cpuMode='punch'; cpuModeUntil = now + CPU_PUNCH_FLIGHT_MS + 80;
+  } else if(cpuMode==='punch' && now>=cpuModeUntil){
+    cpuMode='idle'; cpuNextDecisionAt = now+300;
+  } else if((cpuMode==='guard'||cpuMode==='idle') && now>=cpuModeUntil){
+    cpuNextDecisionAt = now;
+  }
+
+  // rest-hand behavior: covers the chosen zone while guarding, relaxed (open) otherwise
+  const headX = zoneX(c.zone);
+  let targetHandL, targetHandR;
+  if(cpuMode==='guard'){
+    const y = OPP_HEAD_Y-4;
+    if(cpuGuardFocus==='FRONT'){ targetHandL={x:headX-OPP_HEAD_SIZE*0.20,y}; targetHandR={x:headX+OPP_HEAD_SIZE*0.20,y}; }
+    else if(cpuGuardFocus==='LEFT'){ targetHandL={x:headX-OPP_HEAD_SIZE*0.75,y}; targetHandR={x:headX+OPP_HEAD_SIZE*0.20,y}; }
+    else { targetHandL={x:headX-OPP_HEAD_SIZE*0.20,y}; targetHandR={x:headX+OPP_HEAD_SIZE*0.75,y}; }
+  } else {
+    targetHandL = { x: headX-OPP_HEAD_SIZE*0.95, y: OPP_HEAD_Y+22 };
+    targetHandR = { x: headX+OPP_HEAD_SIZE*0.95, y: OPP_HEAD_Y+22 };
+  }
+  if(!(c.punchFlight && c.punchFlight.hand==='L')) c.handL = { x:lerp(c.handL.x,targetHandL.x,0.18), y:lerp(c.handL.y,targetHandL.y,0.18) };
+  if(!(c.punchFlight && c.punchFlight.hand==='R')) c.handR = { x:lerp(c.handR.x,targetHandR.x,0.18), y:lerp(c.handR.y,targetHandR.y,0.18) };
+}
+
+/* ============================ PUNCH FLIGHT + RESOLUTION ============================ */
+function launchPunch(attacker, hand, defender, targetZone, type){
+  const start = hand==='L' ? attacker.handL : attacker.handR;
+  attacker.punchFlight = {
+    hand, type,
+    startX: start.x, startY: start.y,
+    t0: performance.now(),
+    lockedZone: defender.zone,
+    targetZone,
+    isPlayerAttacker: attacker===state.player,
+    flightMs: attacker===state.cpu ? CPU_PUNCH_FLIGHT_MS : PUNCH_FLIGHT_MS
+  };
+}
+
+function currentFlightPos(f, now){
+  const t = clampR((now-f.t0)/(f.flightMs||PUNCH_FLIGHT_MS), 0, 1);
+  const targetX = zoneX(f.lockedZone);
+  const targetY = f.isPlayerAttacker ? OPP_HEAD_Y : PLAYER_HEAD_Y;
+  return { x: lerp(f.startX,targetX,t), y: lerp(f.startY,targetY,t) };
+}
+
+// If both fighters are mid-punch and their throwing hands collide with each other in the air,
+// it's a mutual parry — both hands get penalized, both punches are cancelled outright.
+function checkMutualClash(now){
+  const pf = state.player.punchFlight, cf = state.cpu.punchFlight;
+  if(!pf || !cf) return;
+  const pPos = currentFlightPos(pf, now);
+  const cPos = currentFlightPos(cf, now);
+  const dist = Math.hypot(pPos.x-cPos.x, pPos.y-cPos.y);
+  const collideDist = (HAND_RADIUS*playerScale + HAND_RADIUS) * 1.15;
+  if(dist > collideDist) return;
+
+  state.player.hp = Math.max(0, state.player.hp - DAMAGE_BLOCK_PUNISH);
+  state.cpu.hp = Math.max(0, state.cpu.hp - DAMAGE_BLOCK_PUNISH);
+  state.player.consecutiveHits = 0; state.cpu.consecutiveHits = 0;
+  state.player[pf.hand==='L'?'handLLockUntil':'handRLockUntil'] = now + PARRY_LOCK_MS;
+  state.cpu[cf.hand==='L'?'handLLockUntil':'handRLockUntil'] = now + PARRY_LOCK_MS;
+  spawnFloat(BW/2, (pPos.y+cPos.y)/2, 'CLASH!', '#cfe9ff', 16);
+  spawnImpact((pPos.x+cPos.x)/2, (pPos.y+cPos.y)/2, 0.8, 'clash');
+  triggerShake(3);
+  state.player.punchFlight = null;
+  state.cpu.punchFlight = null;
+  if(state.player.hp<=0) startKnockdown('player');
+  if(state.cpu.hp<=0) startKnockdown('cpu');
+}
+
+function updatePunchFlight(fighter, defender, headPosNow){
+  const f = fighter.punchFlight;
+  if(!f) return;
+  const now = performance.now();
+  const t = clampR((now-f.t0)/(f.flightMs||PUNCH_FLIGHT_MS), 0, 1);
+  const targetX = zoneX(f.lockedZone);
+  const targetY = f.isPlayerAttacker ? OPP_HEAD_Y : PLAYER_HEAD_Y;
+  const curX = lerp(f.startX, targetX, t);
+  const curY = lerp(f.startY, targetY, t);
+  if(f.hand==='L') fighter.handL = {x:curX,y:curY}; else fighter.handR = {x:curX,y:curY};
+
+  if(t>=1){
+    resolvePunch(fighter, defender, f);
+    fighter.punchFlight = null;
+  }
+}
+
+function resolvePunch(attacker, defender, f){
+  const now = performance.now();
+  const isPlayerAttacker = f.isPlayerAttacker;
+  const labelX = isPlayerAttacker ? BW*0.5 : BW*0.5;
+  const labelY = isPlayerAttacker ? BH*0.34 : BH*0.60;
+
+  if(defender.zone !== f.lockedZone){
+    // Successful dodge: the puncher is wide open. Disable their attack+defense for 1s
+    // and freeze their head in place for 1s — a genuine free-hit window for the dodger.
+    defender.consecutiveHits = 0;
+    attacker.disabledUntil = performance.now() + DODGE_PENALTY_MS;
+    attacker.headFrozenUntil = performance.now() + DODGE_PENALTY_MS;
+    spawnFloat(labelX, labelY, 'DODGED!', PAL.accent, 15);
+    spawnFloat(labelX, labelY+18, 'OPENING!', PAL.warn, 12);
+    maybeTauntOnDodge(labelX, labelY-18);
+    if(defender===state.cpu) state.cpu.smirkUntil = now+900;
+    const missPos = defender.lastHeadPos || { x: zoneX(defender.zone), y: isPlayerAttacker?OPP_HEAD_Y:PLAYER_HEAD_Y };
+    spawnImpact(missPos.x, missPos.y, 0.6, 'dodge');
+    return;
+  }
+  const headPos = { x: zoneX(defender.zone), y: isPlayerAttacker ? OPP_HEAD_Y : PLAYER_HEAD_Y };
+  const guarded = guardedZones(defender, headPos).has(f.targetZone);
+
+  if(guarded){
+    defender.consecutiveHits = 0;
+    // New blocking rule: no damage penalty on the attacker — instead the blocker is
+    // rewarded with +1 HP, and the attacker simply can't throw ANY punch for 1 second.
+    defender.hp = Math.min(100, defender.hp + 1);
+    attacker.punchDisabledUntil = performance.now() + 1000;
+    defender.counterWindowUntil = performance.now() + 1000; // reward for reading the attack
+    spawnFloat(labelX, labelY, 'PARRIED! +1', '#cfe9ff', 14);
+    if(defender===state.cpu) state.cpu.smirkUntil = now+900;
+    spawnImpact(headPos.x, headPos.y, 0.6, 'parry');
+    triggerShake(2);
+    return;
+  }
+
+  let dmg = damageFor(f.type);
+  let bonusLabel = '';
+  if(now < (defender.disabledUntil||0)){ dmg += 1; bonusLabel = ' PUNISH!'; }
+  else if(now < (attacker.counterWindowUntil||0)){ dmg += 1; bonusLabel = ' COUNTER!'; attacker.counterWindowUntil = 0; }
+  defender.hp = Math.max(0, defender.hp - dmg);
+  defender.hitstunUntil = performance.now()+160;
+  defender.knockback = 1;
+  triggerShake(3+dmg);
+  spawnFloat(labelX, labelY, '-'+dmg+(f.type==='HOOK'?' HOOK':' STRAIGHT')+bonusLabel, isPlayerAttacker?PAL.rivalGlow:PAL.warn, 16);
+  maybeShoutOnHit(labelX, labelY);
+  registerHit(defender, dmg/2, defender===state.player);
+  if(isPlayerAttacker) state.dealt += dmg;
+
+  // Scoring: every landed punch earns the attacker points equal to its damage — this is
+  // what decides the fight if it goes the distance without a stoppage.
+  if(isPlayerAttacker) state.playerPoints += dmg; else state.cpuPoints += dmg;
+
+  defender.consecutiveHits = (defender.consecutiveHits||0) + 1;
+  if(defender.consecutiveHits === 5){
+    defender.coverDisabledUntil = performance.now() + 3000;
+    spawnFloat(labelX, labelY-20, 'STUNNED!', PAL.warn, 15);
+  }
+  if(defender.consecutiveHits >= 9){
+    startKnockdown(isPlayerAttacker?'cpu':'player');
+    return;
+  }
+
+  if(defender.hp<=0){ startKnockdown(isPlayerAttacker?'cpu':'player'); }
+}
+
+/* ============================ POSE TRACKING ============================ */
+const pose = new Pose({ locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}` });
+// modelComplexity:0 (the "Lite" model) trades a little accuracy for a lot of speed — on
+// mid/low-end mobile hardware the heavier model (1) can be slow enough that results barely
+// ever arrive, which looks exactly like "nothing is being detected."
+pose.setOptions({ modelComplexity:0, smoothLandmarks:true, minDetectionConfidence:0.5, minTrackingConfidence:0.5 });
+let poseFramesProcessed = 0, lastPoseResultAt = 0, poseSendError = null, poseModelReady = false;
+pose.onResults((results)=>{
+  poseModelReady = true;
+  poseFramesProcessed++;
+  lastPoseResultAt = performance.now();
+  latestPose = results.poseLandmarks || null;
+});
+let mpCamera = null; // no longer used (replaced by the manual startCameraLoop below) — kept as a no-op for compatibility
+
+// Manual camera→pose feed loop instead of the @mediapipe/camera_utils Camera helper — more
+// predictable across mobile browsers, and lets us catch/report errors instead of failing
+// silently (which is what made the original issue impossible to diagnose from a phone).
+let cameraLoopActive = false;
+function startCameraLoop(){
+  cameraLoopActive = true;
+  const loop = async () => {
+    if(!cameraLoopActive) return;
+    if(video.readyState >= 2){
+      try{ await pose.send({image:video}); }
+      catch(err){ poseSendError = (err && err.message) ? err.message : String(err); }
+    }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+
+function goodVis(lm, idx, thresh){ return lm[idx] && (lm[idx].visibility===undefined || lm[idx].visibility>thresh); }
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+function toPx(lm, idx){ return { x: lm[idx].x*video.videoWidth, y: lm[idx].y*video.videoHeight }; }
+
+/* ---- Calibration: head (nose) + hands + shoulders (for scale/sway baseline) ---- */
+function startCalibration(){
+  phase = 'calibrate';
+  calib = { samples:[], sampleStart:null, bootAt: performance.now() };
+  neutralLeanX = 0.5; smoothedLeanX = null; playerScale = 1;
+  skipCalibBtn.style.display = 'block';
+  rafId = requestAnimationFrame(calibrateTick);
+}
+
+function sampleCalibrationFrame(){
+  if(!latestPose) return false;
+  const lm = latestPose;
+  const ok = goodVis(lm,LM.NOSE,0.3) && goodVis(lm,LM.LS,0.3) && goodVis(lm,LM.RS,0.3) && goodVis(lm,LM.LW,0.25) && goodVis(lm,LM.RW,0.25);
+  if(!ok) return false;
+  const LS=toPx(lm,LM.LS), RS=toPx(lm,LM.RS);
+  const shoulderW = dist(LS,RS);
+  if(shoulderW<10) return false;
+  calib.samples.push({ leanX: 1-((lm[LM.LS].x+lm[LM.RS].x)/2), shoulderW });
+  return true;
+}
+
+function finalizeCalibration(useDefaults){
+  const avg=(key,fallback)=>{
+    const vals = calib.samples.map(s=>s[key]).filter(v=>v!==undefined);
+    if(vals.length<5) return fallback;
+    vals.sort((a,b)=>a-b);
+    const mid = vals.slice(Math.floor(vals.length*0.2), Math.ceil(vals.length*0.8));
+    return mid.reduce((a,b)=>a+b,0)/mid.length;
+  };
+  if(!useDefaults && calib.samples.length>=8){
+    neutralLeanX = avg('leanX',0.5);
+    const sw = avg('shoulderW', 140);
+    playerScale = clampR(sw/150, 0.8, 1.3);
+  } else {
+    neutralLeanX = 0.5; playerScale = 1;
+  }
+  skipCalibBtn.style.display='none';
+  cancelAnimationFrame(rafId);
+  startMatch();
+}
+
+function calibrateTick(now){
+  bctx.fillStyle='#000'; bctx.fillRect(0,0,BW,BH);
+  if(video.videoWidth){
+    bctx.save(); bctx.scale(-1,1); bctx.translate(-BW,0);
+    bctx.globalAlpha=0.6; bctx.drawImage(video,0,0,BW,BH);
+    bctx.restore(); bctx.globalAlpha=1;
+    bctx.fillStyle='rgba(0,0,0,0.30)'; bctx.fillRect(0,0,BW,BH);
+  }
+  const detected = sampleCalibrationFrame();
+  if(detected){ if(calib.sampleStart===null) calib.sampleStart=now; } else { calib.sampleStart=null; }
+  const progress = calib.sampleStart ? Math.min(1,(now-calib.sampleStart)/2500) : 0;
+
+  if(latestPose){
+    const lm=latestPose;
+    const toScreen=(i)=>{ const l=lm[i]; if(!l||(l.visibility!==undefined&&l.visibility<0.35)) return null; return [(1-l.x)*BW, l.y*BH]; };
+    const nose=toScreen(LM.NOSE), lw=toScreen(LM.LW), rw=toScreen(LM.RW);
+    bctx.strokeStyle = detected?'rgba(127,255,90,0.9)':'rgba(150,150,160,0.5)'; bctx.lineWidth=3;
+    if(nose){ bctx.strokeRect(px(nose[0]-40),px(nose[1]-40),80,80); }
+    [lw,rw].forEach(p=>{ if(!p) return; bctx.beginPath(); bctx.arc(px(p[0]),px(p[1]),18,0,Math.PI*2); bctx.stroke(); });
+  }
+
+  bctx.textAlign='center'; bctx.font="10px 'Press Start 2P'"; bctx.fillStyle=PAL.text;
+  bctx.fillText('BODY SCAN', BW/2, 40);
+  bctx.font="7px 'Press Start 2P'"; bctx.fillStyle='#cfd6e6';
+  bctx.fillText(!latestPose||!detected?'SHOW YOUR HEAD & HANDS':'HOLD STILL...', BW/2, 56);
+
+  // Escalating on-screen diagnostics — no console/devtools needed on a phone. This tells us
+  // (and the player) exactly WHERE it's stuck: no video, model never loaded, or model loaded
+  // but no person detected in frame.
+  const sinceStart = now - (calib.bootAt||now);
+  if(!video.videoWidth && sinceStart > 2500){
+    bctx.font="6px 'Press Start 2P'"; bctx.fillStyle=PAL.warn;
+    bctx.fillText('NO CAMERA FEED — CHECK PERMISSIONS', BW/2, BH-64);
+  } else if(!poseModelReady && sinceStart > 4000){
+    bctx.font="6px 'Press Start 2P'"; bctx.fillStyle=PAL.warn;
+    bctx.fillText('LOADING BODY-TRACKING MODEL...', BW/2, BH-64);
+    if(sinceStart > 12000) bctx.fillText('SLOW/BLOCKED NETWORK? TRY WIFI', BW/2, BH-54);
+  } else if(poseModelReady && !latestPose && sinceStart > 6000){
+    bctx.font="6px 'Press Start 2P'"; bctx.fillStyle=PAL.warn;
+    bctx.fillText('STEP BACK — FIT HEAD + BOTH HANDS IN FRAME', BW/2, BH-64);
+  } else if(poseSendError && sinceStart > 4000){
+    bctx.font="6px 'Press Start 2P'"; bctx.fillStyle=PAL.warn;
+    bctx.fillText('TRACKING ERROR — TRY SKIP SCAN', BW/2, BH-64);
+  }
+
+  const barW=200;
+  bctx.fillStyle=PAL.hpBorder; bctx.fillRect(BW/2-barW/2-2, BH-40, barW+4, 12);
+  bctx.fillStyle='#1a1a1a'; bctx.fillRect(BW/2-barW/2, BH-37, barW, 6);
+  bctx.fillStyle=PAL.accent; bctx.fillRect(BW/2-barW/2, BH-37, barW*progress, 6);
+
+  sctx.imageSmoothingEnabled=false; sctx.clearRect(0,0,BW,BH); sctx.drawImage(back,0,0);
+  if(progress>=1){ finalizeCalibration(false); return; }
+  rafId = requestAnimationFrame(calibrateTick);
+}
+skipCalibBtn.addEventListener('click', ()=>{ if(phase==='calibrate') finalizeCalibration(true); });
+
+/* ---- Gameplay: sway → zone, live hand mirroring, punch detection ---- */
+let wristHistory = {};
+let lastPlayerPunchAt = 0; // global gate: minimum time between ANY two of the player's punches
+
+function updatePlayerZoneAndHands(now){
+  const pl = state.player;
+  let desiredSway = 0;
+  if(latestPose){
+    const lm = latestPose;
+    if(goodVis(lm,LM.LS,0.35) && goodVis(lm,LM.RS,0.35)){
+      const mirroredMidX = 1-((lm[LM.LS].x+lm[LM.RS].x)/2);
+      smoothedLeanX = smoothedLeanX===null ? mirroredMidX : lerp(smoothedLeanX, mirroredMidX, 0.25);
+      desiredSway = clampR((smoothedLeanX-neutralLeanX)*13, -1, 1);
+    }
+  }
+  state.playerSway = lerp(state.playerSway||0, desiredSway, 0.2);
+  if(now < pl.headFrozenUntil){
+    // head is punished-frozen in place — ignore sway for zone purposes this frame
+  } else {
+    const rawZone = updateZone(state.playerSway, pl.zone);
+    const wasForced = pl.cornerForced;
+    pl.zone = applyCornerDwellLimit(pl, rawZone, Math.abs(state.playerSway), now);
+    if(pl.cornerForced && !wasForced) spawnFloat(BW/2, PLAYER_HEAD_Y-70, 'CENTER!', PAL.warn, 13);
+  }
+  pl.displayX = lerp(pl.displayX, zoneX(pl.zone), 0.25);
+
+  if(!latestPose){
+    // No pose at all this frame — both hands are lost to tracking.
+    updateHandTracking(pl, 'L', false, now);
+    updateHandTracking(pl, 'R', false, now);
+    return;
+  }
+  const lm = latestPose;
+
+  // -- camera tracking: did we lose/regain each wrist this frame? --
+  const wristVisL = goodVis(lm, LM.LW, 0.35);
+  const wristVisR = goodVis(lm, LM.RW, 0.35);
+  updateHandTracking(pl, 'L', wristVisL, now);
+  updateHandTracking(pl, 'R', wristVisR, now);
+
+  // -- position validity: wrist below the head, or drifted out past the shoulder, is an --
+  // -- invalid guard/punch position and disables that hand even while it's still tracked. --
+  const noseVis = goodVis(lm, LM.NOSE, 0.35);
+  const lsVis = goodVis(lm, LM.LS, 0.35), rsVis = goodVis(lm, LM.RS, 0.35);
+  const nose = noseVis ? lm[LM.NOSE] : null;
+  const ls = lsVis ? lm[LM.LS] : null, rs = rsVis ? lm[LM.RS] : null;
+  const shoulderW = (ls && rs) ? Math.abs(ls.x-rs.x) : 0.18;
+  function isPosInvalid(wristIdx, shoulderPt){
+    const w = lm[wristIdx];
+    if(nose && w.y > nose.y + HAND_BELOW_HEAD_MARGIN) return true;   // wrist below head level
+    if(shoulderPt && shoulderW>0){
+      const outward = Math.abs(w.x - shoulderPt.x);
+      if(outward > shoulderW*HAND_SHOULDER_OUT_FRAC) return true;    // wrist out past the shoulder
+    }
+    return false;
+  }
+  pl.handLPosInvalid = wristVisL && isPosInvalid(LM.LW, ls);
+  pl.handRPosInvalid = wristVisR && isPosInvalid(LM.RW, rs);
+
+  // Hands now map across the WHOLE screen: raise your real hand up and it travels up toward
+  // the rival (attack reach); keep it low and it stays down near your own head (defense).
+  function liveHandFullScreen(wristIdx){
+    if(!goodVis(lm,wristIdx,0.35)) return null;
+    const wx = 1-lm[wristIdx].x, wy = lm[wristIdx].y;
+    const screenX = clampR(wx*BW, HAND_RADIUS, BW-HAND_RADIUS);
+    const t = clampR((wy-HAND_Y_RAISED)/(HAND_Y_LOW-HAND_Y_RAISED), 0, 1);
+    const screenY = lerp(HAND_TOP_REACH_Y, HAND_BOTTOM_REST_Y, t);
+    return { x:screenX, y:screenY };
+  }
+  const liveL = liveHandFullScreen(LM.LW), liveR = liveHandFullScreen(LM.RW);
+  if(!pl.punchFlight || pl.punchFlight.hand!=='L') pl.handL = liveL || pl.handL;
+  if(!pl.punchFlight || pl.punchFlight.hand!=='R') pl.handR = liveR || pl.handR;
+}
+
+// Handles the lost/re-acquired camera-tracking transition for one hand: going from
+// visible -> not-visible disables it immediately; not-visible -> visible starts a
+// 2-second grace period during which the hand stays disabled before it's usable again.
+function updateHandTracking(fighter, side, isVisibleNow, now){
+  const trackedKey = side==='L' ? 'handLTracked' : 'handRTracked';
+  const graceKey = side==='L' ? 'handLReacquireGraceUntil' : 'handRReacquireGraceUntil';
+  const wasTracked = fighter[trackedKey];
+  if(isVisibleNow && !wasTracked){
+    fighter[graceKey] = now + HAND_LOST_GRACE_MS;
+  } else if(!isVisibleNow){
+    fighter[graceKey] = 0;
+  }
+  fighter[trackedKey] = isVisibleNow;
+}
+
+function processPunchTriggers(now){
+  if(!latestPose) return;
+  const lm = latestPose;
+  const pl = state.player;
+
+  [LM.LW, LM.RW].forEach((idx,i)=>{
+    if(!goodVis(lm, idx, 0.35)) return;
+    const id = 'w'+i;
+    const hand = idx===LM.LW ? 'L' : 'R';
+    const mx = 1-lm[idx].x, my = lm[idx].y;
+    const prev = wristHistory[id];
+    const trail = (prev && prev.trail) ? prev.trail.slice(-3) : [];
+    trail.push({x:mx, y:my, t:now});
+    if(trail.length>4) trail.shift();
+    wristHistory[id] = { x:mx, y:my, t:now, cooldownUntil: prev?prev.cooldownUntil:0, trail, upFrames:0 };
+
+    if(prev && state.running && trail.length>=3){
+      // Smooth over the last few frames instead of one instantaneous delta — this filters
+      // out camera jitter that could otherwise misread lateral face-guard movement as a punch.
+      const base = trail[0];
+      const dtBase = Math.max(1, now-base.t);
+      const dxS = mx-base.x, dyS = my-base.y;
+      const speedS = Math.hypot(dxS,dyS)/(dtBase/1000);
+      const vertRatioS = (-dyS)/(Math.abs(dxS)+0.0001);
+      const isUpwardThrow = dyS < -0.032 && vertRatioS > 1.3 && speedS > 1.6;
+
+      // Require the upward-throw motion to read true for a couple of consecutive frames, and
+      // enforce a small global gap since the player's last punch — together these calibrate
+      // out one-frame jitter and reflexive double-taps so only deliberate throws register.
+      wristHistory[id].upFrames = isUpwardThrow ? (prev.upFrames||0)+1 : 0;
+      const confirmed = wristHistory[id].upFrames >= PUNCH_CONFIRM_FRAMES;
+      const globalReady = now - lastPlayerPunchAt >= PUNCH_GLOBAL_DELAY_MS;
+
+      const alreadyThrowing = pl.punchFlight && pl.punchFlight.hand===hand;
+      const inCooldown = now < (wristHistory[id].cooldownUntil||0);
+      const isLocked = now < (hand==='L' ? pl.handLLockUntil : pl.handRLockUntil);
+      const isPunished = now < (pl.disabledUntil||0) || now < (pl.punchDisabledUntil||0);
+      const handOk = handUsable(pl, hand==='L' ? 'handL' : 'handR');
+      if(!inCooldown && !alreadyThrowing && !isLocked && !isPunished && handOk && confirmed && globalReady){
+        const attackHand = hand==='L' ? pl.handL : pl.handR;
+        const oppHeadX = zoneX(state.cpu.zone);
+        const targetZone = classifyTargetZoneByPosition(attackHand.x, oppHeadX);
+        const type = targetZone==='FRONT' ? 'STRAIGHT' : 'HOOK';
+        launchPunch(pl, hand, state.cpu, targetZone, type);
+        wristHistory[id].cooldownUntil = now+PUNCH_COOLDOWN_MS;
+        lastPlayerPunchAt = now;
+      } else if(!inCooldown && !alreadyThrowing && isLocked && confirmed){
+        spawnFloat(pl.handL.x, PLAYER_HEAD_Y-70, 'HAND STUNNED', PAL.warn, 10);
+        wristHistory[id].cooldownUntil = now+260;
+      } else if(!inCooldown && !alreadyThrowing && !handOk && confirmed){
+        spawnFloat(pl.handL.x, PLAYER_HEAD_Y-70, 'HAND NOT READY', PAL.warn, 10);
+        wristHistory[id].cooldownUntil = now+260;
+      }
+    }
+  });
+}
+
+/* ============================ TEXT / HUD ============================ */
+/* ============================ BLOOD, BRUISING, IMPACT/PARRY/DODGE FX ============================ */
+function registerHit(fighterState, intensity, isPlayer){
+  intensity = intensity===undefined ? 1 : intensity;
+  const hp = fighterState.lastHeadPos || { x: isPlayer?BW/2:BW/2, y: isPlayer?PLAYER_HEAD_Y:OPP_HEAD_Y };
+  if(isPlayer){
+    playerVignetteUntil = performance.now()+200+intensity*180;
+    playerVignetteIntensity = intensity;
+  } else {
+    fighterState.faceDamage = Math.min(5, (fighterState.faceDamage||0)+1);
+    fighterState.hitFlashUntil = performance.now()+150+intensity*140;
+  }
+  spawnBlood(hp.x, hp.y, intensity);
+  spawnImpact(hp.x, hp.y, intensity, 'hit');
+}
+function spawnBlood(x,y,intensity){
+  intensity = intensity===undefined?1:intensity;
+  const n = Math.round(5+intensity*8);
+  for(let i=0;i<n;i++){
+    bloodParticles.push({
+      x, y,
+      vx:(Math.random()-0.5)*(45+intensity*35),
+      vy:-Math.random()*(30+intensity*25)-6,
+      t: performance.now(), life: 380+Math.random()*200+intensity*90
+    });
+  }
+}
+function spawnImpact(x,y,intensity,kind){
+  impactBursts.push({ x, y, t:performance.now(), life:140+(intensity||1)*100, intensity: intensity===undefined?1:intensity, kind: kind||'hit' });
+}
+function updateAndDrawBlood(now){
+  bloodParticles = bloodParticles.filter(b=> now-b.t < b.life);
+  bloodParticles.forEach(b=>{
+    const t = (now-b.t)/1000;
+    const x = b.x + b.vx*t;
+    const y = b.y + b.vy*t + 80*t*t;
+    const p = (now-b.t)/b.life;
+    bctx.globalAlpha = Math.max(0,1-p);
+    bctx.fillStyle = '#a3111f';
+    bctx.fillRect(px(x-1), px(y-1), 2, 2);
+  });
+  bctx.globalAlpha = 1;
+}
+function updateAndDrawImpacts(now){
+  impactBursts = impactBursts.filter(b=> now-b.t < b.life);
+  impactBursts.forEach(b=>{
+    const p = (now-b.t)/b.life;
+    if(b.kind==='dodge'){
+      bctx.strokeStyle = `rgba(200,230,255,${Math.max(0,1-p)})`;
+      bctx.lineWidth = 2;
+      for(let i=0;i<3;i++){
+        const yy = b.y-8+i*8;
+        bctx.beginPath(); bctx.moveTo(px(b.x-18-p*14),px(yy)); bctx.lineTo(px(b.x+18+p*14),px(yy)); bctx.stroke();
+      }
+      return;
+    }
+    if(b.kind==='parry' || b.kind==='clash'){
+      const col = b.kind==='clash' ? `rgba(255,255,255,${Math.max(0,1-p)})` : `rgba(210,235,255,${Math.max(0,1-p)})`;
+      const len = (5+b.intensity*8)*(1-p*0.3);
+      bctx.strokeStyle = col; bctx.lineWidth = 2;
+      for(let i=0;i<8;i++){
+        const ang = (i/8)*Math.PI*2;
+        const x2=b.x+Math.cos(ang)*len, y2=b.y+Math.sin(ang)*len;
+        bctx.beginPath(); bctx.moveTo(px(b.x),px(b.y)); bctx.lineTo(px(x2),px(y2)); bctx.stroke();
+      }
+      return;
+    }
+    // clean-hit splash: bright radiating burst
+    const len = (5+b.intensity*11)*(1-p*0.4);
+    bctx.strokeStyle = `rgba(255,240,180,${Math.max(0,1-p)})`; bctx.lineWidth = 2.5;
+    for(let i=0;i<7;i++){
+      const ang = (i/7)*Math.PI*2 + b.intensity;
+      const x2=b.x+Math.cos(ang)*len, y2=b.y+Math.sin(ang)*len;
+      bctx.beginPath(); bctx.moveTo(px(b.x),px(b.y)); bctx.lineTo(px(x2),px(y2)); bctx.stroke();
+    }
+  });
+}
+
+const HIT_SHOUTS = ['BAAAM!','UGHH!','BOOOM!','POW!','WHACK!'];
+const DODGE_TAUNTS = ['HAHAHA!','MISSED!','TOO SLOW!'];
+function maybeShoutOnHit(x,y){
+  if(Math.random() < 0.35){
+    const word = HIT_SHOUTS[Math.floor(Math.random()*HIT_SHOUTS.length)];
+    spawnFloat(x, y-32, word, '#ffcf6b', 18);
+  }
+}
+function maybeTauntOnDodge(x,y){
+  if(Math.random() < 0.3){
+    const word = DODGE_TAUNTS[Math.floor(Math.random()*DODGE_TAUNTS.length)];
+    spawnFloat(x, y-32, word, PAL.accent, 15);
+  }
+}
+
+function spawnFloat(x,y,text,color,size){ floatingTexts.push({x,y,text,color,t:performance.now(),life:600,size:size||12}); }
+function drawFloatingTexts(now){
+  floatingTexts = floatingTexts.filter(f=> now-f.t < f.life);
+  bctx.textAlign='center';
+  floatingTexts.forEach(f=>{
+    const p=(now-f.t)/f.life;
+    bctx.globalAlpha=1-p;
+    bctx.fillStyle=f.color;
+    bctx.font=`${f.size||12}px 'Press Start 2P'`;
+    bctx.fillText(f.text, px(f.x), px(f.y-p*26));
+  });
+  bctx.globalAlpha=1;
+}
+
+function drawHUD(){
+  drawHealthBar(14, 14, BW-28, state.cpu.hp, false, PAL.rival);
+  bctx.textAlign='left'; bctx.fillStyle=PAL.text; bctx.font="8px 'Press Start 2P'";
+  bctx.fillText('RIVAL', 14, 34);
+  bctx.fillStyle=PAL.warn; bctx.font="6px 'Press Start 2P'";
+  bctx.fillText('HARD', 60, 34);
+
+  drawHealthBar(14, BH-30, BW-28, state.player.hp, false, PAL.player);
+  bctx.textAlign='left'; bctx.fillStyle=PAL.text; bctx.font="8px 'Press Start 2P'";
+  bctx.fillText('YOU', 14, BH-36);
+
+  bctx.textAlign='center'; bctx.font="9px 'Press Start 2P'"; bctx.fillStyle=PAL.text;
+  bctx.fillText('RND '+state.round, BW/2, 48);
+  bctx.font="16px 'Press Start 2P'"; bctx.fillStyle=PAL.accent;
+  bctx.fillText(String(state.timeLeft), BW/2, 68);
+
+  bctx.font="8px 'Press Start 2P'"; bctx.fillStyle='#8f9bb3'; bctx.textAlign='right';
+  bctx.fillText('DMG '+state.dealt, BW-14, 48);
+  bctx.font="6px 'Press Start 2P'"; bctx.fillStyle='#5f6b83';
+  bctx.fillText('PTS '+Math.round(state.playerPoints)+'-'+Math.round(state.cpuPoints), BW-14, 58);
+}
+function drawHealthBar(x,y,w,hp,flip,color){
+  bctx.fillStyle=PAL.hpBorder; bctx.fillRect(x-2,y-2,w+4,14);
+  bctx.fillStyle=PAL.hpBack; bctx.fillRect(x,y,w,10);
+  const fw=Math.max(0,Math.round(w*hp/100));
+  bctx.fillStyle=color;
+  if(flip) bctx.fillRect(x+w-fw,y,fw,10); else bctx.fillRect(x,y,fw,10);
+}
+
+/* ============================ KNOCKDOWN / REFEREE COUNT ============================ */
+function startKnockdown(who){
+  if(phase==='knockdown' || phase==='end') return;
+  let priorKOs = 0;
+  if(who==='player') {
+    state.playerKnockdowns++; state.playerKnockdownsThisRound++; state.player.hp=0; state.player.consecutiveHits=0;
+    priorKOs = state.playerKnockdowns - 1;
+    state.cpuPoints += KNOCKDOWN_BONUS_POINTS; // scoring credit for the fighter who scored the knockdown
+  } else {
+    state.cpuKnockdowns++; state.cpuKnockdownsThisRound++; state.cpu.hp=0; state.cpu.consecutiveHits=0;
+    priorKOs = state.cpuKnockdowns - 1;
+    state.playerPoints += KNOCKDOWN_BONUS_POINTS;
+  }
+  if(who==='player' && state.playerKnockdownsThisRound>=3){ finishMatch('cpu'); return; }
+  if(who==='cpu' && state.cpuKnockdownsThisRound>=3){ finishMatch('player'); return; }
+  // Each knockdown suffered earlier in the match makes getting back up harder (fatigue).
+  const requiredRaises = clampR(KD_BASE_RAISES + priorKOs*KD_RAISES_PER_PRIOR_KO, KD_BASE_RAISES, KD_MAX_RAISES);
+  state.knockdown = { who, startedAt: performance.now(), count:0, raiseCount:0, lastRaisedL:false, lastRaisedR:false, requiredRaises };
+  phase='knockdown'; state.running=false; clearInterval(timerInterval);
+  spawnFloat(BW/2, BH*0.4, 'DOWN!', PAL.warn, 18);
+}
+function resolveKnockdownRecovery(who){
+  if(who==='player'){ state.player.hp = 30; state.cpu.hp = Math.min(100, state.cpu.hp+10); }
+  else { state.cpu.hp = 30; state.player.hp = Math.min(100, state.player.hp+10); }
+  state.player.consecutiveHits = 0; state.cpu.consecutiveHits = 0;
+  state.knockdown = null;
+  phase = 'resume'; state.running = false; clearInterval(timerInterval);
+  state.resumeStartedAt = performance.now();
+  spawnFloat(BW/2, BH*0.4, 'GET UP!', PAL.accent, 18);
+  const resumeToken = ++resumeTokenCounter;
+  setTimeout(()=>{
+    if(phase!=='resume' || resumeToken!==resumeTokenCounter) return; // match/state moved on meanwhile
+    phase = 'fight'; state.running = true; startTimer();
+  }, RESUME_DELAY_MS);
+}
+function updateKnockdown(now){
+  const kd = state.knockdown; if(!kd) return;
+  kd.count = Math.min(10, Math.floor((now-kd.startedAt)/700)+1);
+  if(kd.who==='player'){
+    if(state.playerKnockdowns<4 && latestPose){
+      const lm=latestPose;
+      const noseY = goodVis(lm,LM.NOSE,0.4) ? lm[LM.NOSE].y : 0.4;
+      const raisedL = goodVis(lm,LM.LW,0.35) && lm[LM.LW].y < noseY-0.02;
+      const raisedR = goodVis(lm,LM.RW,0.35) && lm[LM.RW].y < noseY-0.02;
+      if(raisedL && !kd.lastRaisedL) kd.raiseCount++;
+      if(raisedR && !kd.lastRaisedR) kd.raiseCount++;
+      kd.lastRaisedL = raisedL; kd.lastRaisedR = raisedR;
+      if(kd.raiseCount >= (kd.requiredRaises||KD_BASE_RAISES)){ resolveKnockdownRecovery('player'); return; }
+    }
+    if(kd.count>=10){ finishMatch('cpu'); }
+  } else {
+    if(state.cpuKnockdowns<4 && kd.count>=8){ resolveKnockdownRecovery('cpu'); return; }
+    if(kd.count>=10){ finishMatch('player'); }
+  }
+}
+
+/* ============================ ROUND / MATCH FLOW ============================ */
+function startMatch(){
+  resetState();
+  wristHistory = {};
+  cpuMode='idle'; cpuNextDecisionAt=0; cpuNextZoneChangeAt=0;
+  clearInterval(timerInterval);
+  resumeTokenCounter++; // invalidate any stray "resume" timeout left over from a previous match
+  phase = 'entrance';
+  state.entranceStartedAt = performance.now();
+  setTimeout(()=>{ startRound(1); }, 1500);
+  rafId = requestAnimationFrame(gameTick);
+}
+function startRound(n){
+  state.round=n; state.timeLeft=ROUND_SECONDS;
+  state.playerKnockdownsThisRound=0; state.cpuKnockdownsThisRound=0;
+  state.intro=true; phase='intro';
+  runIntro(n);
+}
+function runIntro(n){
+  const seq=['ROUND '+n,'FIGHT!']; let i=0; state.introMsg=seq[0];
+  const step=()=>{
+    if(i>=seq.length){ state.intro=false; state.introMsg=null; state.running=true; phase='fight'; startTimer(); return; }
+    state.introMsg=seq[i];
+    setTimeout(()=>{ i++; step(); }, i===0?900:700);
+  };
+  step();
+}
+function startTimer(){
+  clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{
+    if(!state.running) return;
+    state.timeLeft--;
+    if(state.timeLeft<=0) handleRoundTimeUp();
+  },1000);
+}
+function handleRoundTimeUp(){
+  state.running=false; clearInterval(timerInterval);
+  if(state.round < TOTAL_ROUNDS){
+    // Round survived without a knockout — both fighters recover HP heading into the next round.
+    const justFinished = state.round;
+    state.player.hp = Math.min(100, state.player.hp + ROUND_HEAL_HP);
+    state.cpu.hp = Math.min(100, state.cpu.hp + ROUND_HEAL_HP);
+    phase='roundEnd';
+    state.roundEndMsg='END OF ROUND '+justFinished;
+    state.roundEndSubMsg='+'+ROUND_HEAL_HP+' HP EACH';
+    setTimeout(()=>startRound(justFinished+1), 2200);
+  } else {
+    // Went the distance — decided on points: damage landed, plus knockdown bonuses.
+    if(state.playerPoints>state.cpuPoints) finishMatch('player');
+    else if(state.cpuPoints>state.playerPoints) finishMatch('cpu');
+    else finishMatch('draw');
+  }
+}
+function finishMatch(winner){
+  state.running=false; clearInterval(timerInterval);
+  state.matchWinner = winner;
+  phase = 'celebrate';
+  state.celebrateStartedAt = performance.now();
+  setTimeout(()=>{
+    phase='end';
+    finalScore.textContent = state.dealt;
+    finalPoints.textContent = Math.round(state.playerPoints)+' - '+Math.round(state.cpuPoints);
+    if(winner==='cpu'){ endTitle.textContent = state.player.hp<=0?'KO...':'LOSS'; endTitle.classList.add('lose'); }
+    else if(winner==='player'){ endTitle.textContent = state.cpu.hp<=0?'KO!':'WINNER'; endTitle.classList.remove('lose'); }
+    else { endTitle.textContent='DRAW'; endTitle.classList.remove('lose'); }
+    endScreen.style.display='flex';
+  }, 2200);
+}
+
+/* ============================ MAIN LOOP ============================ */
+function gameTick(now){
+  bctx.clearRect(0,0,BW,BH);
+  drawBackground(now);
+
+  if(phase==='knockdown'){
+    updateKnockdown(now);
+  } else if(state.running){
+    updatePlayerZoneAndHands(now);
+    updateCPU(now);
+    processPunchTriggers(now);
+  }
+
+  checkMutualClash(now);
+  updatePunchFlight(state.player, state.cpu);
+  updatePunchFlight(state.cpu, state.player);
+  trackHandSpeeds(state.player, now);
+  trackHandSpeeds(state.cpu, now);
+
+  const cpuHurt = performance.now() < state.cpu.hitstunUntil;
+  const plHurt = performance.now() < state.player.hitstunUntil;
+  const cpuDown = phase==='knockdown' && state.knockdown && state.knockdown.who==='cpu';
+  const plDown = phase==='knockdown' && state.knockdown && state.knockdown.who==='player';
+  const cpuFallT = cpuDown ? clampR((now-state.knockdown.startedAt)/500,0,1) : 0;
+  const plFallT = plDown ? clampR((now-state.knockdown.startedAt)/500,0,1) : 0;
+
+  let entranceCpuY = 0, entrancePlY = 0;
+  if(phase==='entrance'){
+    const t = clampR((now-(state.entranceStartedAt||now))/1500, 0, 1);
+    const ease = 1-Math.pow(1-t,3);
+    entranceCpuY = lerp(-260, 0, ease);
+    entrancePlY = lerp(260, 0, ease);
+  }
+
+  const cpuHeadPos = drawOpponentHead(state.cpu.displayX, OPP_HEAD_Y+entranceCpuY, OPP_HEAD_SIZE, now, cpuFallT, cpuMode==='telegraph', cpuHurt);
+  const plHeadPos = drawPlayerHead(state.player.displayX, PLAYER_HEAD_Y+entrancePlY, HEAD_SIZE*playerScale, now, plFallT);
+  state.cpu.lastHeadPos = cpuHeadPos;
+  state.player.lastHeadPos = plHeadPos;
+
+  if(phase!=='entrance'){
+    const cpuShL = shoulderAnchor(cpuHeadPos, OPP_HEAD_SIZE, -1);
+    const cpuShR = shoulderAnchor(cpuHeadPos, OPP_HEAD_SIZE, 1);
+    const plShL = shoulderAnchor(plHeadPos, HEAD_SIZE*playerScale, -1);
+    const plShR = shoulderAnchor(plHeadPos, HEAD_SIZE*playerScale, 1);
+
+    const cpuElL = simulatedElbow(cpuShL, state.cpu.handL, -1);
+    const cpuElR = simulatedElbow(cpuShR, state.cpu.handR, 1);
+    let plElL = null, plElR = null;
+    if(latestPose){
+      plElL = liveElbowScreenPos(latestPose, LM.LS, LM.LE, LM.LW, plShL, state.player.handL);
+      plElR = liveElbowScreenPos(latestPose, LM.RS, LM.RE, LM.RW, plShR, state.player.handR);
+    }
+    plElL = plElL || simulatedElbow(plShL, state.player.handL, -1);
+    plElR = plElR || simulatedElbow(plShR, state.player.handR, 1);
+
+    drawArmLine(cpuShL, cpuElL, state.cpu.handL, PAL.rival);
+    drawArmLine(cpuShR, cpuElR, state.cpu.handR, PAL.rival);
+    drawArmLine(plShL, plElL, state.player.handL, PAL.player);
+    drawArmLine(plShR, plElR, state.player.handR, PAL.player);
+
+    drawZoneHighlights(cpuHeadPos, OPP_HEAD_SIZE, guardedZones(state.cpu, cpuHeadPos), PAL.rivalGlow);
+    drawZoneHighlights(plHeadPos, HEAD_SIZE*playerScale, guardedZones(state.player, plHeadPos), PAL.playerGlow);
+
+    drawHand(state.cpu.handL.x, state.cpu.handL.y, OPP_HAND_RADIUS, PAL.rival, PAL.rivalGlow, isGuarding(state.cpu, cpuHeadPos), performance.now()<state.cpu.handLLockUntil);
+    drawHand(state.cpu.handR.x, state.cpu.handR.y, OPP_HAND_RADIUS, PAL.rival, PAL.rivalGlow, isGuarding(state.cpu, cpuHeadPos), performance.now()<state.cpu.handRLockUntil);
+    drawHand(state.player.handL.x, state.player.handL.y, HAND_RADIUS*playerScale, PAL.player, PAL.playerGlow, isGuarding(state.player, plHeadPos), performance.now()<state.player.handLLockUntil || !handUsable(state.player,'handL'));
+    drawHand(state.player.handR.x, state.player.handR.y, HAND_RADIUS*playerScale, PAL.player, PAL.playerGlow, isGuarding(state.player, plHeadPos), performance.now()<state.player.handRLockUntil || !handUsable(state.player,'handR'));
+  }
+
+  if(phase==='celebrate') drawReferee(now, state.matchWinner);
+  if(phase==='resume') drawRefereeResume(now);
+
+  updateAndDrawBlood(now);
+  updateAndDrawImpacts(now);
+  drawFloatingTexts(now);
+  drawHUD();
+
+  if(now < playerVignetteUntil){
+    const p = (playerVignetteUntil-now)/380;
+    const grd = bctx.createRadialGradient(BW/2,BH*0.72,BH*0.14,BW/2,BH*0.72,BH*0.55);
+    grd.addColorStop(0,'rgba(200,0,0,0)');
+    grd.addColorStop(1,`rgba(200,0,0,${0.55*Math.min(1,p)*playerVignetteIntensity})`);
+    bctx.fillStyle = grd; bctx.fillRect(0,0,BW,BH);
+  }
+
+  if(phase==='entrance'){
+    bctx.fillStyle='rgba(0,0,0,0.15)'; bctx.fillRect(0,0,BW,BH);
+    bctx.textAlign='center'; bctx.font="16px 'Press Start 2P'"; bctx.fillStyle=PAL.accent;
+    bctx.fillText('FIGHT NIGHT', BW/2, BH*0.46);
+  }
+
+  if(state.intro && state.introMsg){
+    bctx.fillStyle='rgba(0,0,0,0.25)'; bctx.fillRect(0,0,BW,BH);
+    bctx.textAlign='center'; bctx.font="24px 'Press Start 2P'"; bctx.fillStyle=PAL.accent;
+    bctx.fillText(state.introMsg, BW/2, BH/2);
+  }
+  if(phase==='knockdown' && state.knockdown){
+    bctx.fillStyle='rgba(0,0,0,0.4)'; bctx.fillRect(0,0,BW,BH);
+    bctx.textAlign='center'; bctx.font="11px 'Press Start 2P'"; bctx.fillStyle=PAL.warn;
+    bctx.fillText('DOWN!', BW/2, BH*0.36);
+    bctx.font="34px 'Press Start 2P'"; bctx.fillStyle=PAL.text;
+    bctx.fillText(String(state.knockdown.count||1), BW/2, BH*0.50);
+    if(state.knockdown.who==='player' && state.playerKnockdowns<4){
+      bctx.font="8px 'Press Start 2P'"; bctx.fillStyle=PAL.accent;
+      bctx.fillText('PUMP YOUR HANDS UP', BW/2, BH*0.60);
+      bctx.fillText('TO GET UP', BW/2, BH*0.64);
+      bctx.font="10px 'Press Start 2P'"; bctx.fillStyle=PAL.text;
+      bctx.fillText((state.knockdown.raiseCount||0)+' / '+(state.knockdown.requiredRaises||KD_BASE_RAISES), BW/2, BH*0.70);
+    }
+  }
+  if(phase==='roundEnd'){
+    bctx.fillStyle='rgba(0,0,0,0.4)'; bctx.fillRect(0,0,BW,BH);
+    bctx.textAlign='center'; bctx.font="15px 'Press Start 2P'"; bctx.fillStyle=PAL.accent;
+    bctx.fillText(state.roundEndMsg||'END OF ROUND', BW/2, BH/2);
+    if(state.roundEndSubMsg){
+      bctx.font="9px 'Press Start 2P'"; bctx.fillStyle=PAL.text;
+      bctx.fillText(state.roundEndSubMsg, BW/2, BH/2+22);
+    }
+  }
+  if(phase==='resume'){
+    bctx.fillStyle='rgba(0,0,0,0.35)'; bctx.fillRect(0,0,BW,BH);
+    bctx.textAlign='center'; bctx.font="9px 'Press Start 2P'"; bctx.fillStyle=PAL.text;
+    bctx.fillText('REFEREE RESETTING THE FIGHT...', BW/2, BH*0.18);
+  }
+
+  sctx.imageSmoothingEnabled=false; sctx.clearRect(0,0,BW,BH); sctx.drawImage(back,0,0);
+  if(phase!=='end') rafId = requestAnimationFrame(gameTick);
+}
+
+/* ============================ BOOT ============================ */
+enableBtn.addEventListener('click', async ()=>{
+  camStatus.textContent='Requesting camera access…';
+  enableBtn.disabled=true;
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:'user', width:{ideal:480}, height:{ideal:640} }, audio:false
+    });
+    video.srcObject=stream; video2.srcObject=stream;
+    await new Promise(res=>{ video.onloadedmetadata=res; });
+    await video.play().catch(()=>{}); // some mobile browsers need an explicit play() even though it's muted+autoplay
+    await document.fonts.ready;
+    startCameraLoop();
+    startScreen.style.display='none';
+    startCalibration();
+  }catch(err){
+    camStatus.textContent='Camera access denied or unavailable. Please allow camera permissions and retry.';
+    enableBtn.disabled=false;
+  }
+});
+restartBtn.addEventListener('click', ()=>{ endScreen.style.display='none'; startCalibration(); });
+</script>
+</body>
+</html>
